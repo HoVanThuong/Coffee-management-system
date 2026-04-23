@@ -5,11 +5,14 @@
              version="3.0">
   <persistence-unit name="mariadb-pu">
     <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-    <class>entity.Company</class>
-    <class>entity.Job</class>
-    <class>entity.Skill</class>
-    <class>entity.Application</class>
-    <class>entity.Candidate</class>
+    <!-- Liệt kê tất cả các entity -->
+    <class>entity.Ban</class>
+    <class>entity.PhieuGoiMon</class>
+    <class>entity.ChiTietPhieuGoi</class>
+    <class>entity.DoUong</class>
+    <class>entity.HoaDon</class>
+    <class>entity.NhanVien</class>
+    <class>entity.TaiKhoan</class>
     <properties>
       <property name="jakarta.persistence.jdbc.driver"
                 value="org.mariadb.jdbc.Driver"/>

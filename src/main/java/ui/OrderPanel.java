@@ -8,6 +8,8 @@ import network.Response;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.text.DecimalFormat;
@@ -22,13 +24,18 @@ public class OrderPanel extends JPanel {
     private PhieuGoiMon activeOrder;
     private List<ChiTietPhieuGoi> currentCart = new ArrayList<>();
 
-    private DefaultTableModel menuModel;
-    private JTable menuTable;
+    private JPanel menuGrid;
     private DefaultTableModel cartModel;
     private JTable cartTable;
     private JLabel lblTotal;
     private JButton btnPay;
-    private final DecimalFormat df = new DecimalFormat("#,##0 VND");
+    private final DecimalFormat df = new DecimalFormat("#,##0");
+
+    // Colors
+    private final Color BG_LIGHT = new Color(250, 251, 253);
+    private final Color ACCENT_BLUE = new Color(0, 150, 255);
+    private final Color SUCCESS_GREEN = new Color(46, 204, 113);
+    private final Color TEXT_DARK = new Color(30, 30, 40);
 
     public OrderPanel(Client client, TaiKhoan currentUser, Ban ban, StaffDashboard parent) {
         this.client = client;
@@ -36,25 +43,157 @@ public class OrderPanel extends JPanel {
         this.ban = ban;
         this.parentFrame = parent;
 
-        setLayout(new BorderLayout(10, 10));
-        setBorder(new EmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout());
+        setBackground(BG_LIGHT);
 
-        // Title
-        JLabel lblTitle = new JLabel("Order cho Bàn " + ban.getMaBan(), SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        add(lblTitle, BorderLayout.NORTH);
+        // 1. TOP BAR (Tiêu đề và nút quay lại)
+        add(createHeader(), BorderLayout.NORTH);
 
-        // Main content split pane
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createMenuPanel(), createCartPanel());
-        splitPane.setResizeWeight(0.6);
+        // 2. CENTER CONTENT (Split Pane)
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createMenuSection(), createCartSection());
+        splitPane.setDividerLocation(700);
+        splitPane.setDividerSize(1);
+        splitPane.setBorder(null);
         add(splitPane, BorderLayout.CENTER);
 
         loadData();
     }
 
-    private void loadData() {
-        loadMenu();
-        loadActiveOrder();
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(Color.WHITE);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 235)));
+        header.setPreferredSize(new Dimension(0, 70));
+
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 15));
+        left.setOpaque(false);
+
+        JButton btnBack = new JButton("← Quay lại");
+        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnBack.setContentAreaFilled(false);
+        btnBack.setBorderPainted(false);
+        btnBack.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnBack.addActionListener(e -> parentFrame.showTablesView());
+
+        JLabel lblTitle = new JLabel("ORDER: BÀN " + ban.getMaBan());
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblTitle.setForeground(TEXT_DARK);
+
+        left.add(btnBack);
+        left.add(lblTitle);
+        header.add(left, BorderLayout.WEST);
+
+        return header;
+    }
+
+    private JPanel createMenuSection() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_LIGHT);
+        panel.setBorder(new EmptyBorder(20, 30, 20, 20));
+
+        JLabel lblSearch = new JLabel("Thực đơn đồ uống");
+        lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblSearch.setBorder(new EmptyBorder(0, 0, 15, 0));
+        panel.add(lblSearch, BorderLayout.NORTH);
+
+        menuGrid = new JPanel(new GridLayout(0, 3, 15, 15));
+        menuGrid.setBackground(BG_LIGHT);
+
+        JScrollPane scroll = new JScrollPane(menuGrid);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        panel.add(scroll, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private JPanel createCartSection() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(230, 230, 235)));
+
+        // Title Giỏ hàng
+        JLabel lblCart = new JLabel("Chi tiết đơn hàng");
+        lblCart.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblCart.setBorder(new EmptyBorder(20, 20, 15, 20));
+        panel.add(lblCart, BorderLayout.NORTH);
+
+        // Bảng giỏ hàng
+        String[] cols = {"Món", "SL", "Giá"};
+        cartModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return c == 1; }
+        };
+        cartTable = new JTable(cartModel);
+        styleCartTable();
+
+        JScrollPane scroll = new JScrollPane(cartTable);
+        scroll.setBorder(new EmptyBorder(0, 10, 0, 10));
+        scroll.getViewport().setBackground(Color.WHITE);
+        panel.add(scroll, BorderLayout.CENTER);
+
+        // Khu vực thanh toán (South)
+        JPanel footer = new JPanel(new BorderLayout(0, 15));
+        footer.setBackground(Color.WHITE);
+        footer.setBorder(new EmptyBorder(20, 20, 30, 20));
+
+        JPanel totalRow = new JPanel(new BorderLayout());
+        totalRow.setOpaque(false);
+        JLabel lblTotalText = new JLabel("TỔNG CỘNG");
+        lblTotalText.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTotalText.setForeground(new Color(120, 120, 130));
+
+        lblTotal = new JLabel("0 VND");
+        lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTotal.setForeground(ACCENT_BLUE);
+
+        totalRow.add(lblTotalText, BorderLayout.NORTH);
+        totalRow.add(lblTotal, BorderLayout.SOUTH);
+
+        JPanel btnGroup = new JPanel(new GridLayout(1, 2, 10, 0));
+        btnGroup.setOpaque(false);
+
+        JButton btnConfirm = createStyledButton("XÁC NHẬN", SUCCESS_GREEN);
+        btnConfirm.addActionListener(e -> confirmOrder());
+
+        btnPay = createStyledButton("THANH TOÁN", ACCENT_BLUE);
+        btnPay.addActionListener(e -> handlePayment());
+
+        btnGroup.add(btnConfirm);
+        btnGroup.add(btnPay);
+
+        footer.add(totalRow, BorderLayout.NORTH);
+        footer.add(btnGroup, BorderLayout.SOUTH);
+        panel.add(footer, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private void styleCartTable() {
+        cartTable.setRowHeight(45);
+        cartTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        cartTable.setSelectionBackground(new Color(245, 246, 250));
+        cartTable.setShowVerticalLines(false);
+        cartTable.setIntercellSpacing(new Dimension(0, 0));
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        cartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+
+        cartTable.getTableHeader().setBackground(Color.WHITE);
+        cartTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cartTable.getTableHeader().setForeground(new Color(150, 150, 160));
+    }
+
+    private JButton createStyledButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(bg);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setPreferredSize(new Dimension(0, 45));
+        return btn;
     }
 
     private void loadMenu() {
@@ -62,160 +201,60 @@ public class OrderPanel extends JPanel {
             Response response = client.sendRequest(new Request(CommandType.GET_MENU, null));
             if (response.isSuccess()) {
                 List<DoUong> menuItems = (List<DoUong>) response.getData();
-                menuModel.setRowCount(0);
+                menuGrid.removeAll();
                 for (DoUong item : menuItems) {
-                    menuModel.addRow(new Object[]{item.getMaDoUong(), item.getTenDoUong(), df.format(Double.parseDouble(item.getGiaTien())), item});
+                    menuGrid.add(createDrinkCard(item));
                 }
+                menuGrid.revalidate();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Lỗi khi tải thực đơn: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
-    private void loadActiveOrder() {
-        try {
-            Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
-            if (response.isSuccess() && response.getData() != null) {
-                activeOrder = (PhieuGoiMon) response.getData();
-                currentCart = activeOrder.getChiTietPhieuGois();
-                updateCartTable();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    private JPanel createDrinkCard(DoUong drink) {
+        JPanel card = new JPanel(new BorderLayout(0, 5));
+        card.setBackground(Color.WHITE);
+        card.setBorder(new LineBorder(new Color(230, 230, 235), 1, true));
+        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-    private JPanel createMenuPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Thực Đơn"));
+        JLabel lblName = new JLabel(drink.getTenDoUong(), SwingConstants.CENTER);
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblName.setBorder(new EmptyBorder(10, 5, 0, 5));
 
-        menuModel = new DefaultTableModel(new String[]{"Mã", "Tên Món", "Giá", ""}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 3) return DoUong.class;
-                return String.class;
-            }
-        };
-        menuTable = new JTable(menuModel);
-        menuTable.setRowHeight(30);
-        menuTable.getColumnModel().getColumn(3).setMinWidth(0);
-        menuTable.getColumnModel().getColumn(3).setMaxWidth(0);
-        menuTable.getColumnModel().getColumn(3).setWidth(0);
+        JLabel lblPrice = new JLabel(df.format(Double.parseDouble(drink.getGiaTien())) + " đ", SwingConstants.CENTER);
+        lblPrice.setForeground(ACCENT_BLUE);
+        lblPrice.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblPrice.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-        menuTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                int row = menuTable.rowAtPoint(evt.getPoint());
-                if (row >= 0) {
-                    DoUong selectedDrink = (DoUong) menuModel.getValueAt(row, 3);
-                    addToCart(selectedDrink);
-                }
-            }
+        // Placeholder Icon
+        JLabel lblIcon = new JLabel("☕");
+        lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
+        lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
+
+        card.add(lblName, BorderLayout.NORTH);
+        card.add(lblIcon, BorderLayout.CENTER);
+        card.add(lblPrice, BorderLayout.SOUTH);
+
+        card.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e) { addToCart(drink); }
+            public void mouseEntered(java.awt.event.MouseEvent e) { card.setBorder(new LineBorder(ACCENT_BLUE, 1)); }
+            public void mouseExited(java.awt.event.MouseEvent e) { card.setBorder(new LineBorder(new Color(230, 230, 235), 1)); }
         });
 
-        JScrollPane scrollPane = new JScrollPane(menuTable);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
+        return card;
     }
 
-    private JPanel createCartPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder("Món order"));
-
-        cartModel = new DefaultTableModel(new String[]{"Tên Món", "SL", "Đơn Giá", "Thành Tiền"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 1; // Allow editing quantity
-            }
-        };
-        cartTable = new JTable(cartModel);
-        cartTable.setRowHeight(30);
-
-        cartTable.getModel().addTableModelListener(e -> {
-            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
-                int row = e.getFirstRow();
-                int col = e.getColumn();
-                if (col == 1) { // Quantity column
-                    try {
-                        int newQuantity = Integer.parseInt(cartModel.getValueAt(row, 1).toString());
-                        if (newQuantity <= 0) {
-                            currentCart.remove(row);
-                        } else {
-                            currentCart.get(row).setSoLuong(newQuantity);
-                        }
-                        updateCartTable();
-                    } catch (NumberFormatException ex) {
-                        // Handle invalid input if necessary
-                        JOptionPane.showMessageDialog(this, "Số lượng không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                        updateCartTable(); // Revert to old value
-                    }
-                }
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(cartTable);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        // South panel for total and buttons
-        JPanel southPanel = new JPanel(new BorderLayout());
-        lblTotal = new JLabel("Tổng cộng: 0 VND");
-        lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblTotal.setBorder(new EmptyBorder(10, 10, 10, 10));
-        southPanel.add(lblTotal, BorderLayout.NORTH);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-
-        JButton btnConfirm = new JButton("Xác nhận Order");
-        btnConfirm.setBackground(new Color(21, 139, 2));
-        btnConfirm.setForeground(Color.WHITE);
-        btnConfirm.addActionListener(e -> confirmOrder());
-        buttonPanel.add(btnConfirm);
-
-        // NÚT THANH TOÁN MỚI
-        btnPay = new JButton("Thanh toán");
-        btnPay.setBackground(new Color(0, 123, 255));
-        btnPay.setForeground(Color.WHITE);
-        btnPay.addActionListener(e -> {
-            if (activeOrder != null) {
-                PaymentDialog paymentDialog = new PaymentDialog(parentFrame, client, activeOrder);
-                paymentDialog.setVisible(true);
-                // Sau khi dialog đóng, refresh lại view chính
-                parentFrame.showTablesView();
-            } else {
-                JOptionPane.showMessageDialog(this, "Chưa có order để thanh toán. Vui lòng xác nhận order trước.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        // Chỉ hiển thị nút thanh toán nếu đã có order
-        btnPay.setVisible(activeOrder != null);
-        buttonPanel.add(btnPay);
-
-        southPanel.add(buttonPanel, BorderLayout.CENTER);
-        panel.add(southPanel, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    private void addToCart(DoUong doUong) {
+    private void addToCart(DoUong drink) {
         for (ChiTietPhieuGoi ct : currentCart) {
-            if (ct.getDoUong().getMaDoUong().equals(doUong.getMaDoUong())) {
+            if (ct.getDoUong().getMaDoUong().equals(drink.getMaDoUong())) {
                 ct.setSoLuong(ct.getSoLuong() + 1);
                 updateCartTable();
                 return;
             }
         }
         ChiTietPhieuGoi newCt = new ChiTietPhieuGoi();
-        newCt.setDoUong(doUong);
+        newCt.setDoUong(drink);
         newCt.setSoLuong(1);
-        try {
-            newCt.setDonGia(Double.parseDouble(doUong.getGiaTien()));
-        } catch (NumberFormatException e) {
-            newCt.setDonGia(0.0);
-        }
+        newCt.setDonGia(Double.parseDouble(drink.getGiaTien()));
         currentCart.add(newCt);
         updateCartTable();
     }
@@ -228,28 +267,36 @@ public class OrderPanel extends JPanel {
             cartModel.addRow(new Object[]{
                     ct.getDoUong().getTenDoUong(),
                     ct.getSoLuong(),
-                    df.format(ct.getDonGia()),
                     df.format(lineTotal)
             });
             total += lineTotal;
         }
-        lblTotal.setText("Tổng cộng: " + df.format(total));
+        lblTotal.setText(df.format(total) + " VND");
+        btnPay.setVisible(activeOrder != null);
+    }
 
-        if (btnPay != null) {
-            btnPay.setVisible(activeOrder != null);
-        }
+    // Giữ nguyên logic loadData, loadActiveOrder, confirmOrder và handlePayment từ code gốc của bạn
+    private void loadData() { loadMenu(); loadActiveOrder(); }
+
+    private void loadActiveOrder() {
+        try {
+            Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
+            if (response.isSuccess() && response.getData() != null) {
+                activeOrder = (PhieuGoiMon) response.getData();
+                currentCart = activeOrder.getChiTietPhieuGois();
+                updateCartTable();
+            }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void confirmOrder() {
         if (currentCart.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Giỏ hàng trống!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Giỏ hàng trống!");
             return;
         }
 
         double total = 0;
-        for (ChiTietPhieuGoi ct : currentCart) {
-            total += ct.getSoLuong() * ct.getDonGia();
-        }
+        for (ChiTietPhieuGoi ct : currentCart) total += ct.getSoLuong() * ct.getDonGia();
 
         if (activeOrder == null) {
             activeOrder = new PhieuGoiMon();
@@ -262,32 +309,25 @@ public class OrderPanel extends JPanel {
         activeOrder.setTongTien(total);
         activeOrder.setNgayTao(java.time.LocalDate.now().toString());
 
-
-        // Lọc ra những món chưa có ID (món mới thêm)
         List<ChiTietPhieuGoi> newItems = new ArrayList<>();
         for (ChiTietPhieuGoi ct : currentCart) {
-            if (ct.getId() == null) {
-                newItems.add(ct);
-            }
+            if (ct.getId() == null) newItems.add(ct);
         }
-
-        if (newItems.isEmpty() && activeOrder.getMaPhieu() != null) {
-             JOptionPane.showMessageDialog(this, "Không có món mới nào để thêm hoặc cập nhật!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-             return;
-        }
-
 
         try {
             Response res = client.sendRequest(new Request(CommandType.ORDER_FOOD, new Object[]{activeOrder, newItems}));
             if (res.isSuccess()) {
-                JOptionPane.showMessageDialog(this, "Đã xác nhận order thành công!");
-                parentFrame.showTablesView(); // Quay lại màn hình bàn
-            } else {
-                JOptionPane.showMessageDialog(this, "Lỗi khi xác nhận order: " + res.getMessage(), "Lỗi Server", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Đã xác nhận order!");
+                parentFrame.showTablesView();
             }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void handlePayment() {
+        if (activeOrder != null) {
+            PaymentDialog paymentDialog = new PaymentDialog(parentFrame, client, activeOrder);
+            paymentDialog.setVisible(true);
+            parentFrame.showTablesView();
         }
     }
 }

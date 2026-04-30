@@ -8,143 +8,184 @@ import network.Request;
 import network.Response;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
+import javax.swing.border.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.util.List;
 
 public class StaffDashboard extends JFrame {
-    private final TaiKhoan currentUser;
+
     private final Client client;
+    private final TaiKhoan currentUser;
 
-    private JPanel mainContentPanel;
     private CardLayout cardLayout;
+    private JPanel mainContentPanel;
+    private JButton activeNavButton = null;
+    private JPanel gridTableContainer;
 
-    private JPanel tableLayoutContainer;
+    // ── Palette (Thống nhất với Manager) ──────────────────────────
+    private static final Color C_SIDEBAR_BG   = new Color(15,  17,  23);
+    private static final Color C_NAV_ACTIVE   = new Color(99, 179, 237);
+    private static final Color C_PAGE_BG      = new Color(246, 248, 252);
+    private static final Color C_CARD_BG      = Color.WHITE;
+    private static final Color C_TEXT_PRIMARY = new Color(26,  32,  44);
+    private static final Color C_TEXT_MUTED   = new Color(113, 128, 150);
+    private static final Color C_BORDER       = new Color(226, 232, 240);
+    private static final Color C_SUCCESS      = new Color(72, 187, 120);
+    private static final Color C_DANGER       = new Color(245, 101,  96);
+    private static final Color C_ACCENT       = new Color(99, 179, 237);
+
+    // ── Fonts ────────────────────────────────────────────────
+    private static final Font F_TITLE   = new Font("Segoe UI", Font.BOLD, 26);
+    private static final Font F_NAV     = new Font("Segoe UI Semibold", Font.PLAIN, 14);
+    private static final Font F_LABEL   = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font F_BRAND   = new Font("Segoe UI", Font.BOLD, 16);
 
     public StaffDashboard(Client client, TaiKhoan currentUser) {
         this.client = client;
         this.currentUser = currentUser;
-        initComponents();
-        loadTableData();
-    }
 
-    private void initComponents() {
-        setTitle("Coffee Manager - Nhân Viên: " + currentUser.getNhanVien().getHoTen());
-        setSize(1200, 800);
+        setTitle("Coffee Staff - " + currentUser.getNhanVien().getHoTen());
+        setSize(1280, 800);
+        setMinimumSize(new Dimension(1100, 700));
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Xử lý đóng cửa sổ
+        // Xử lý đóng app
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                int confirm = JOptionPane.showConfirmDialog(StaffDashboard.this,
-                        "Bạn có chắc chắn muốn thoát ứng dụng?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    System.exit(0);
-                }
+                if (confirm("Bạn có chắc muốn thoát ứng dụng?")) System.exit(0);
             }
         });
 
-        // 1. Sidebar bên trái
-        JPanel sidebar = createSidebar();
-        add(sidebar, BorderLayout.WEST);
+        add(buildSidebar(), BorderLayout.WEST);
 
-        // 2. Khu vực trung tâm dùng CardLayout để chuyển đổi
         cardLayout = new CardLayout();
         mainContentPanel = new JPanel(cardLayout);
+        mainContentPanel.setBackground(C_PAGE_BG);
 
-        // Card 1: Sơ đồ bàn
-        tableLayoutContainer = new JPanel(new BorderLayout());
-        tableLayoutContainer.setBackground(new Color(245, 246, 250));
-        
-        JLabel lblTitle = new JLabel("SƠ ĐỒ BÀN", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        lblTitle.setForeground(new Color(44, 62, 80));
-        lblTitle.setBorder(new EmptyBorder(20, 0, 20, 0));
-        tableLayoutContainer.add(lblTitle, BorderLayout.NORTH);
-
-        mainContentPanel.add(tableLayoutContainer, "TableLayout");
+        // Màn hình sơ đồ bàn
+        mainContentPanel.add(createTableLayoutPage(), "TABLE_MAP");
 
         add(mainContentPanel, BorderLayout.CENTER);
+        loadTableData();
     }
 
-    private JPanel createSidebar() {
-        JPanel sidebar = new JPanel();
-        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(44, 62, 80));
-        sidebar.setPreferredSize(new Dimension(250, 0));
-        sidebar.setBorder(new EmptyBorder(20, 20, 20, 20));
+    // ══════════════════════════════════════════════════════════
+    // SIDEBAR (Re-use Manager Design)
+    // ══════════════════════════════════════════════════════════
+    private JPanel buildSidebar() {
+        JPanel sidebar = new JPanel(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(240, getHeight()));
+        sidebar.setBackground(C_SIDEBAR_BG);
 
-        // Info User
-        JLabel lblUser = new JLabel("COFFEE STAFF");
-        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblUser.setForeground(Color.WHITE);
-        lblUser.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sidebar.add(lblUser);
+        // Header
+        JPanel brand = new JPanel();
+        brand.setLayout(new BoxLayout(brand, BoxLayout.Y_AXIS));
+        brand.setBackground(C_SIDEBAR_BG);
+        brand.setBorder(new EmptyBorder(28, 24, 20, 24));
+        JLabel name = new JLabel("Coffee Staff");
+        name.setFont(F_BRAND);
+        name.setForeground(Color.WHITE);
+        brand.add(name);
+        sidebar.add(brand, BorderLayout.NORTH);
 
-        JLabel lblRole = new JLabel(currentUser.getTenDangNhap());
-        lblRole.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblRole.setForeground(new Color(189, 195, 199));
-        lblRole.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sidebar.add(lblRole);
+        // Navigation
+        JPanel nav = new JPanel();
+        nav.setLayout(new BoxLayout(nav, BoxLayout.Y_AXIS));
+        nav.setBackground(C_SIDEBAR_BG);
+        nav.setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        sidebar.add(Box.createRigidArea(new Dimension(0, 40)));
+        JButton btnMap = buildNavButton("Sơ Đồ Bàn", "TABLE_MAP");
+        nav.add(btnMap);
+        setNavActive(btnMap, true);
+        activeNavButton = btnMap;
 
-        // Buttons
-        JButton btnTables = createSidebarButton("Sơ đồ bàn");
-        btnTables.addActionListener(e -> showTablesView());
-        sidebar.add(btnTables);
+        sidebar.add(nav, BorderLayout.CENTER);
 
-        sidebar.add(Box.createVerticalGlue()); // Đẩy nút Đăng xuất xuống cuối
+        // Bottom User Card
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setBackground(C_SIDEBAR_BG);
+        bottom.setBorder(new EmptyBorder(0, 12, 20, 12));
 
-        JButton btnLogout = createSidebarButton("Đăng Xuất");
-        btnLogout.setBackground(new Color(192, 57, 43)); // Màu đỏ
+        JButton btnLogout = mkButton("Đăng xuất", C_DANGER);
         btnLogout.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
+            if (confirm("Xác nhận đăng xuất?")) {
                 this.dispose();
                 new LoginFrame(client).setVisible(true);
             }
         });
-        sidebar.add(btnLogout);
+        bottom.add(btnLogout, BorderLayout.SOUTH);
+        sidebar.add(bottom, BorderLayout.SOUTH);
 
         return sidebar;
     }
 
-    private JButton createSidebarButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(new Color(52, 73, 94));
+    private JButton buildNavButton(String label, String card) {
+        JButton btn = new JButton(label);
+        btn.setFont(F_NAV);
+        btn.setForeground(new Color(160, 174, 192));
+        btn.setBackground(C_SIDEBAR_BG);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
-        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(220, 45));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (!btn.getBackground().equals(new Color(192, 57, 43))) { // Khác màu đỏ
-                    btn.setBackground(new Color(41, 128, 185)); // Màu xanh sáng khi hover
-                }
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (!btn.getBackground().equals(new Color(192, 57, 43))) {
-                    btn.setBackground(new Color(52, 73, 94));
-                }
-            }
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(new EmptyBorder(10, 14, 10, 14));
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addActionListener(e -> {
+            if (activeNavButton != null) setNavActive(activeNavButton, false);
+            setNavActive(btn, true);
+            activeNavButton = btn;
+            cardLayout.show(mainContentPanel, card);
         });
         return btn;
     }
 
-    public void showTablesView() {
-        loadTableData(); // Tải lại để cập nhật màu sắc
-        cardLayout.show(mainContentPanel, "TableLayout");
+    private void setNavActive(JButton btn, boolean active) {
+        if (active) {
+            btn.setBackground(new Color(30, 44, 70));
+            btn.setForeground(C_NAV_ACTIVE);
+        } else {
+            btn.setBackground(C_SIDEBAR_BG);
+            btn.setForeground(new Color(160, 174, 192));
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // SƠ ĐỒ BÀN (Lưới 10x10)
+    // ══════════════════════════════════════════════════════════
+    private JPanel createTableLayoutPage() {
+        JPanel page = new JPanel(new BorderLayout());
+        page.setBackground(C_PAGE_BG);
+
+        // Header (Thống nhất UI Manager)
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(C_CARD_BG);
+        header.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, C_BORDER), new EmptyBorder(20, 32, 20, 32)));
+
+        JLabel lbTitle = new JLabel("Sơ Đồ Bàn");
+        lbTitle.setFont(F_TITLE);
+        lbTitle.setForeground(C_TEXT_PRIMARY);
+        header.add(lbTitle, BorderLayout.WEST);
+
+        JButton btnRefresh = mkButton("Làm Mới", C_ACCENT);
+        btnRefresh.addActionListener(e -> loadTableData());
+        header.add(btnRefresh, BorderLayout.EAST);
+
+        page.add(header, BorderLayout.NORTH);
+
+        // Grid 10x10
+        gridTableContainer = new JPanel(new GridLayout(10, 10, 12, 12));
+        gridTableContainer.setBackground(C_PAGE_BG);
+        gridTableContainer.setBorder(new EmptyBorder(24, 32, 24, 32));
+
+        JScrollPane sp = new JScrollPane(gridTableContainer);
+        sp.setBorder(null);
+        page.add(sp, BorderLayout.CENTER);
+
+        return page;
     }
 
     private void loadTableData() {
@@ -152,101 +193,105 @@ public class StaffDashboard extends JFrame {
             Response res = client.sendRequest(new Request(CommandType.GET_TABLES, null));
             if (res.isSuccess() && res.getData() != null) {
                 List<Ban> listBan = (List<Ban>) res.getData();
-                displayTables(listBan);
-            } else {
-                JOptionPane.showMessageDialog(this, "Không thể tải danh sách bàn.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                updateGrid(listBan);
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        } catch (Exception ex) { ex.printStackTrace(); }
     }
 
-    private void displayTables(List<Ban> listBan) {
-        // Cố định lưới thành 10 hàng x 10 cột (100 ô)
-        JPanel gridPanel = new JPanel(new GridLayout(10, 10, 10, 10));
-        gridPanel.setBackground(new Color(245, 246, 250));
-        gridPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
-        
-        // Đảm bảo chiều cao của grid panel đủ lớn để các ô luôn giữ tỷ lệ vuông vức hoặc cố định
-        gridPanel.setPreferredSize(new Dimension(1000, 1000));
+    private void updateGrid(List<Ban> listBan) {
+        gridTableContainer.removeAll();
 
-        // Lặp qua 100 vị trí. Chèn bàn nếu có, nếu không thì chèn ô trống (Placeholder)
+        // Luôn tạo 100 ô (10x10)
         for (int i = 0; i < 100; i++) {
             if (i < listBan.size()) {
-                gridPanel.add(createTableCard(listBan.get(i)));
+                gridTableContainer.add(createTableCard(listBan.get(i)));
             } else {
-                // Tạo một panel trong suốt để chiếm chỗ trống, giữ cấu trúc lưới 10x10
-                JPanel emptySlot = new JPanel();
-                emptySlot.setOpaque(false);
-                gridPanel.add(emptySlot);
+                // Ô trống để giữ layout
+                JPanel empty = new JPanel();
+                empty.setOpaque(false);
+                gridTableContainer.add(empty);
             }
         }
-
-        // Tạo JScrollPane bọc ngoài Grid để có thể cuộn xem hết
-        JScrollPane scrollPane = new JScrollPane(gridPanel);
-        scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16); 
-
-        // Xóa layout cũ và thay bằng cái mới
-        if (tableLayoutContainer.getComponentCount() > 1) {
-            tableLayoutContainer.remove(1); 
-        }
-        tableLayoutContainer.add(scrollPane, BorderLayout.CENTER);
-        tableLayoutContainer.revalidate();
-        tableLayoutContainer.repaint();
+        gridTableContainer.revalidate();
+        gridTableContainer.repaint();
     }
 
     private JPanel createTableCard(Ban ban) {
-        boolean isOccupied = ban.getTrangThai().equals("Có khách");
+        boolean isOccupied = "Có khách".equals(ban.getTrangThai());
 
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(isOccupied ? new Color(255, 234, 234) : new Color(234, 255, 234));
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(isOccupied ? new Color(231, 76, 60) : new Color(46, 204, 113), 2),
-                new EmptyBorder(5, 5, 5, 5) // Giảm padding để có không gian
+        JPanel card = new JPanel(new BorderLayout(0, 5));
+        card.setBackground(C_CARD_BG);
+        card.setBorder(new CompoundBorder(
+                new LineBorder(isOccupied ? C_DANGER : C_BORDER, 1, true),
+                new EmptyBorder(12, 8, 12, 8)
         ));
-        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // Tên Mã Bàn (Top)
-        JLabel lblMaBan = new JLabel(ban.getMaBan(), SwingConstants.CENTER);
-        lblMaBan.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblMaBan.setForeground(new Color(44, 62, 80));
-
-        // Icon Emoji lớn ở giữa (Center)
         JLabel lblIcon = new JLabel(isOccupied ? "👥" : "🪑", SwingConstants.CENTER);
-        lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 36)); 
+        lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
 
-        // Trạng thái bàn (Bottom)
-        JLabel lblTrangThai = new JLabel(ban.getTrangThai(), SwingConstants.CENTER);
-        lblTrangThai.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblTrangThai.setForeground(isOccupied ? new Color(231, 76, 60) : new Color(46, 204, 113));
+        JLabel lblName = new JLabel(ban.getMaBan(), SwingConstants.CENTER);
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblName.setForeground(C_TEXT_PRIMARY);
 
-        card.add(lblMaBan, BorderLayout.NORTH);
-        card.add(lblIcon, BorderLayout.CENTER);
-        card.add(lblTrangThai, BorderLayout.SOUTH);
+        JLabel lblStatus = new JLabel(ban.getTrangThai(), SwingConstants.CENTER);
+        lblStatus.setFont(F_LABEL);
+        lblStatus.setForeground(isOccupied ? C_DANGER : C_SUCCESS);
 
-        // Thêm sự kiện Click vào Card
-        card.addMouseListener(new java.awt.event.MouseAdapter() {
+        card.add(lblIcon, BorderLayout.NORTH);
+        card.add(lblName, BorderLayout.CENTER);
+        card.add(lblStatus, BorderLayout.SOUTH);
+
+        // Hover Effect
+        card.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                openOrderPanelForTable(ban);
+            public void mouseEntered(MouseEvent e) {
+                card.setBackground(new Color(247, 250, 252));
             }
             @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                card.setBackground(isOccupied ? new Color(255, 210, 210) : new Color(210, 255, 210));
+            public void mouseExited(MouseEvent e) {
+                card.setBackground(C_CARD_BG);
             }
             @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                card.setBackground(isOccupied ? new Color(255, 234, 234) : new Color(234, 255, 234));
+            public void mouseClicked(MouseEvent e) {
+                openOrder(ban);
             }
         });
 
         return card;
     }
 
-    private void openOrderPanelForTable(Ban ban) {
+    private void openOrder(Ban ban) {
         OrderPanel orderPanel = new OrderPanel(client, currentUser, ban, this);
-        mainContentPanel.add(orderPanel, "OrderPanel");
-        cardLayout.show(mainContentPanel, "OrderPanel");
+        mainContentPanel.add(orderPanel, "ORDER_VIEW");
+        cardLayout.show(mainContentPanel, "ORDER_VIEW");
+    }
+
+    public void showTablesView() {
+        loadTableData();
+        cardLayout.show(mainContentPanel, "TABLE_MAP");
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // UI HELPERS (Tương đương Manager)
+    // ══════════════════════════════════════════════════════════
+    private JButton mkButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFont(F_LABEL);
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(bg);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(new EmptyBorder(8, 18, 8, 18));
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { btn.setBackground(bg.darker()); }
+            public void mouseExited (MouseEvent e) { btn.setBackground(bg); }
+        });
+        return btn;
+    }
+
+    private boolean confirm(String msg) {
+        return JOptionPane.showConfirmDialog(this, msg, "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
     }
 }

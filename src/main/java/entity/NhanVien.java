@@ -15,6 +15,7 @@ package entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -27,7 +28,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "nhan_vien")
-public class NhanVien {
+public class NhanVien implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     @Column(name = "ma_nhan_vien")

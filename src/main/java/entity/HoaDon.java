@@ -15,6 +15,9 @@ package entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
+import java.time.LocalDate;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -24,14 +27,15 @@ import lombok.*;
 
 @Entity
 @Table(name = "hoa_don")
-public class HoaDon {
+public class HoaDon implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     @Column(name = "ma_hoa_don")
     private String maHoaDon;
 
     @Column(name = "ngay_tao")
-    private String ngayTao;
+    private LocalDate ngayTao;
 
     @Column(name = "trang_thai")
     private String trangThai;

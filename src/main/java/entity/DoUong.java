@@ -15,6 +15,7 @@ package entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Setter
@@ -26,7 +27,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "do_uong")
-public class DoUong {
+public class DoUong implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     @Column(name = "ma_do_uong")

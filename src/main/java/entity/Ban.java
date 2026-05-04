@@ -17,6 +17,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.util.List;
+import entity.enums.TrangThaiBan;
 
 @Setter
 @Getter
@@ -43,4 +44,14 @@ public class Ban implements Serializable {
     // Ban 1 --- * HoaDon
     @OneToMany(mappedBy = "ban", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HoaDon> hoaDons;
+
+    /** Helper: trả về enum tương ứng với trạng thái bàn hiện tại. */
+    public TrangThaiBan getTrangThaiBanEnum() {
+        return TrangThaiBan.fromLabel(trangThai);
+    }
+
+    /** Helper: đặt trạng thái bàn từ enum. */
+    public void setTrangThaiBanEnum(TrangThaiBan tt) {
+        this.trangThai = tt.getLabel();
+    }
 }

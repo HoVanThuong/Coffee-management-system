@@ -18,6 +18,7 @@ import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
+import entity.enums.TrangThaiHoaDon;
 
 @Setter
 @Getter
@@ -63,4 +64,14 @@ public class HoaDon implements Serializable {
     // HoaDon 1 --- * ChiTietHoaDon
     @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChiTietHoaDon> chiTietHoaDons;
+
+    /** Helper: trả về enum tương ứng với trạng thái hóa đơn hiện tại. */
+    public TrangThaiHoaDon getTrangThaiEnum() {
+        return TrangThaiHoaDon.fromLabel(trangThai);
+    }
+
+    /** Helper: đặt trạng thái hóa đơn từ enum. */
+    public void setTrangThaiEnum(TrangThaiHoaDon tt) {
+        this.trangThai = tt.getLabel();
+    }
 }

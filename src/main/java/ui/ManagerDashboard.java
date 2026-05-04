@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import ui.components.SimpleBarChart;
+import entity.enums.TrangThaiBan;
 
 public class ManagerDashboard extends JFrame {
 
@@ -388,7 +389,7 @@ public class ManagerDashboard extends JFrame {
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
                         List<entity.Ban> listBan = (List<entity.Ban>) resTables.getData();
-                        long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
+                        long activeTables = listBan.stream().filter(b -> TrangThaiBan.CO_KHACH == b.getTrangThaiBanEnum()).count();
                         SwingUtilities.invokeLater(() -> ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables)));
                     }
 

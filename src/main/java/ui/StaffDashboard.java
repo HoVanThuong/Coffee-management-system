@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import ui.components.SimpleBarChart;
 import ui.components.WrapLayout;
 import java.util.stream.Collectors;
+import entity.enums.TrangThaiBan;
 
 public class StaffDashboard extends JFrame {
 
@@ -251,7 +252,7 @@ public class StaffDashboard extends JFrame {
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
                         List<entity.Ban> listBan = (List<entity.Ban>) resTables.getData();
-                        long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
+                        long activeTables = listBan.stream().filter(b -> TrangThaiBan.CO_KHACH == b.getTrangThaiBanEnum()).count();
                         SwingUtilities.invokeLater(() -> ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables)));
                     }
 
@@ -396,7 +397,7 @@ public class StaffDashboard extends JFrame {
             sp.getVerticalScrollBar().setUnitIncrement(16);
             
             // Count badge in tab title
-            long occupied = zoneBans.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
+            long occupied = zoneBans.stream().filter(b -> TrangThaiBan.CO_KHACH == b.getTrangThaiBanEnum()).count();
             String tabTitle = zone + "  (" + occupied + "/" + zoneBans.size() + " bàn)"; 
             tableTabs.addTab(tabTitle, sp);
             
@@ -417,7 +418,7 @@ public class StaffDashboard extends JFrame {
     }
 
     private JPanel createTableCard(Ban ban) {
-        boolean isOccupied = "Có khách".equals(ban.getTrangThai());
+        boolean isOccupied = TrangThaiBan.CO_KHACH == ban.getTrangThaiBanEnum();
 
         JPanel card = new JPanel(new BorderLayout(0, 8));
         card.setPreferredSize(new Dimension(140, 120));

@@ -11,14 +11,12 @@ import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 import service.HoaDonService;
+import entity.enums.TrangThaiBan;
+import entity.enums.TrangThaiHoaDon;
 
 import java.util.List;
 
 public class HoaDonServiceImpl implements HoaDonService {
-    private static final String TRANG_THAI_CHUA_THANH_TOAN = "Chưa thanh toán";
-    private static final String TRANG_THAI_DA_THANH_TOAN = "Đã thanh toán";
-    private static final String TRANG_THAI_BAN_TRONG = "Trống";
-    private static final String TRANG_THAI_BAN_CO_KHACH = "Có khách";
 
     private final HoaDonDaoImpl hoaDonDao;
     private final BanDaoImpl banDao;
@@ -60,8 +58,9 @@ public class HoaDonServiceImpl implements HoaDonService {
         try {
             tr.begin();
 
-            TypedQuery<HoaDon> queryOrder = em.createQuery("SELECT p FROM HoaDon p WHERE p.ban.maBan = :maBan AND p.trangThai = 'Chưa thanh toán'", HoaDon.class);
+            TypedQuery<HoaDon> queryOrder = em.createQuery("SELECT p FROM HoaDon p WHERE p.ban.maBan = :maBan AND p.trangThai = :status", HoaDon.class);
             queryOrder.setParameter("maBan", phieu.getBan().getMaBan());
+            queryOrder.setParameter("status", TrangThaiHoaDon.CHUA_THANH_TOAN.getLabel());
             HoaDon existingPhieu = null;
             try {
                 existingPhieu = queryOrder.getSingleResult();
@@ -86,7 +85,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 if (phieu.getBan() != null) phieu.setBan(em.merge(phieu.getBan()));
                 if (phieu.getNhanVien() != null) phieu.setNhanVien(em.merge(phieu.getNhanVien()));
                 
-                phieu.setTrangThai(TRANG_THAI_CHUA_THANH_TOAN);
+                phieu.setTrangThaiEnum(TrangThaiHoaDon.CHUA_THANH_TOAN);
                 em.persist(phieu);
                 
                 for (ChiTietHoaDon ct : cart) {
@@ -99,7 +98,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 
                 Ban ban = em.find(Ban.class, phieu.getBan().getMaBan());
                 if (ban != null) {
-                    ban.setTrangThai(TRANG_THAI_BAN_CO_KHACH);
+                    ban.setTrangThaiBanEnum(TrangThaiBan.CO_KHACH);
                     em.merge(ban);
                 }
             }
@@ -121,12 +120,12 @@ public class HoaDonServiceImpl implements HoaDonService {
         try {
             tr.begin();
             HoaDon attachedHoaDon = em.merge(hoaDon);
-            attachedHoaDon.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
+            attachedHoaDon.setTrangThaiEnum(TrangThaiHoaDon.DA_THANH_TOAN);
             em.persist(attachedHoaDon);
 
             Ban banToFree = em.find(Ban.class, attachedHoaDon.getBan().getMaBan());
             if (banToFree != null) {
-                banToFree.setTrangThai(TRANG_THAI_BAN_TRONG);
+                banToFree.setTrangThaiBanEnum(TrangThaiBan.TRONG);
                 em.merge(banToFree);
             }
             tr.commit();

@@ -2,6 +2,7 @@ package dao.impl;
 
 import dao.HoaDonDao;
 import entity.HoaDon;
+import entity.enums.TrangThaiHoaDon;
 import db.JPAUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -128,8 +129,11 @@ public class HoaDonDaoImpl implements HoaDonDao {
     public HoaDon getActiveOrderForTable(String maBan) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            return em.createQuery("SELECT p FROM HoaDon p LEFT JOIN FETCH p.chiTietHoaDons ct LEFT JOIN FETCH ct.doUong WHERE p.ban.maBan = :maBan AND p.trangThai = 'Chưa thanh toán'", HoaDon.class)
+            return em.createQuery(
+                    "SELECT p FROM HoaDon p LEFT JOIN FETCH p.chiTietHoaDons ct LEFT JOIN FETCH ct.doUong WHERE p.ban.maBan = :maBan AND p.trangThai = :status",
+                    HoaDon.class)
                     .setParameter("maBan", maBan)
+                    .setParameter("status", TrangThaiHoaDon.CHUA_THANH_TOAN.getLabel())
                     .getSingleResult();
         } catch (jakarta.persistence.NoResultException e) {
             return null;

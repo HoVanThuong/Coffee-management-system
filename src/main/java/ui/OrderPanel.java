@@ -21,8 +21,8 @@ public class OrderPanel extends JPanel {
     private final TaiKhoan currentUser;
     private final Ban ban;
     private final StaffDashboard parentFrame;
-    private PhieuGoiMon activeOrder;
-    private List<ChiTietPhieuGoi> currentCart = new ArrayList<>();
+    private HoaDon activeOrder;
+    private List<ChiTietHoaDon> currentCart = new ArrayList<>();
 
     private JPanel menuGrid;
     private DefaultTableModel cartModel;
@@ -244,14 +244,14 @@ public class OrderPanel extends JPanel {
     }
 
     private void addToCart(DoUong drink) {
-        for (ChiTietPhieuGoi ct : currentCart) {
+        for (ChiTietHoaDon ct : currentCart) {
             if (ct.getDoUong().getMaDoUong().equals(drink.getMaDoUong())) {
                 ct.setSoLuong(ct.getSoLuong() + 1);
                 updateCartTable();
                 return;
             }
         }
-        ChiTietPhieuGoi newCt = new ChiTietPhieuGoi();
+        ChiTietHoaDon newCt = new ChiTietHoaDon();
         newCt.setDoUong(drink);
         newCt.setSoLuong(1);
         newCt.setDonGia(Double.parseDouble(drink.getGiaTien()));
@@ -262,7 +262,7 @@ public class OrderPanel extends JPanel {
     private void updateCartTable() {
         cartModel.setRowCount(0);
         double total = 0;
-        for (ChiTietPhieuGoi ct : currentCart) {
+        for (ChiTietHoaDon ct : currentCart) {
             double lineTotal = ct.getSoLuong() * ct.getDonGia();
             cartModel.addRow(new Object[]{
                     ct.getDoUong().getTenDoUong(),
@@ -282,8 +282,8 @@ public class OrderPanel extends JPanel {
         try {
             Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
             if (response.isSuccess() && response.getData() != null) {
-                activeOrder = (PhieuGoiMon) response.getData();
-                currentCart = activeOrder.getChiTietPhieuGois();
+                activeOrder = (HoaDon) response.getData();
+                currentCart = activeOrder.getChiTietHoaDons();
                 updateCartTable();
             }
         } catch (Exception e) { e.printStackTrace(); }
@@ -296,21 +296,21 @@ public class OrderPanel extends JPanel {
         }
 
         double total = 0;
-        for (ChiTietPhieuGoi ct : currentCart) total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDon ct : currentCart) total += ct.getSoLuong() * ct.getDonGia();
 
         if (activeOrder == null) {
-            activeOrder = new PhieuGoiMon();
-            activeOrder.setMaPhieu("PG" + System.currentTimeMillis());
+            activeOrder = new HoaDon();
+            activeOrder.setMaHoaDon("HD" + System.currentTimeMillis());
             activeOrder.setBan(ban);
             activeOrder.setNhanVien(currentUser.getNhanVien());
             activeOrder.setTrangThai("Chưa thanh toán");
         }
-        activeOrder.setChiTietPhieuGois(currentCart);
+        activeOrder.setChiTietHoaDons(currentCart);
         activeOrder.setTongTien(total);
-        activeOrder.setNgayTao(java.time.LocalDate.now().toString());
+        activeOrder.setNgayTao(java.time.LocalDate.now());
 
-        List<ChiTietPhieuGoi> newItems = new ArrayList<>();
-        for (ChiTietPhieuGoi ct : currentCart) {
+        List<ChiTietHoaDon> newItems = new ArrayList<>();
+        for (ChiTietHoaDon ct : currentCart) {
             if (ct.getId() == null) newItems.add(ct);
         }
 

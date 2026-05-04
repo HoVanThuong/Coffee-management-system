@@ -1,8 +1,7 @@
 package ui;
 
-import entity.ChiTietPhieuGoi;
+import entity.ChiTietHoaDon;
 import entity.HoaDon;
-import entity.PhieuGoiMon;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -19,7 +18,7 @@ import java.time.LocalDate;
 
 public class PaymentDialog extends JDialog {
     private final Client client;
-    private final PhieuGoiMon phieuGoiMon;
+    private final HoaDon hoaDon;
     private final StaffDashboard parentFrame;
     private double finalAmount;
     private final DecimalFormat df = new DecimalFormat("#,##0");
@@ -29,12 +28,12 @@ public class PaymentDialog extends JDialog {
     private final Color TEXT_DARK = new Color(30, 30, 40);
     private final Color TEXT_MUTED = new Color(120, 120, 130);
 
-    public PaymentDialog(StaffDashboard parent, Client client, PhieuGoiMon phieuGoiMon) {
+    public PaymentDialog(StaffDashboard parent, Client client, HoaDon hoaDon) {
         super(parent, "Xác nhận thanh toán", true);
         this.parentFrame = parent;
         this.client = client;
-        this.phieuGoiMon = phieuGoiMon;
-        this.finalAmount = phieuGoiMon.getTongTien();
+        this.hoaDon = hoaDon;
+        this.finalAmount = hoaDon.getTongTien();
 
         setSize(550, 650);
         setLocationRelativeTo(parent);
@@ -61,7 +60,7 @@ public class PaymentDialog extends JDialog {
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitle.setForeground(TEXT_DARK);
 
-        JLabel lblSubTitle = new JLabel("Bàn: " + phieuGoiMon.getBan().getMaBan() + " | Mã phiếu: " + phieuGoiMon.getMaPhieu());
+        JLabel lblSubTitle = new JLabel("Bàn: " + hoaDon.getBan().getMaBan() + " | Mã hóa đơn: " + hoaDon.getMaHoaDon());
         lblSubTitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblSubTitle.setForeground(TEXT_MUTED);
 
@@ -80,7 +79,7 @@ public class PaymentDialog extends JDialog {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
-        for (ChiTietPhieuGoi ct : phieuGoiMon.getChiTietPhieuGois()) {
+        for (ChiTietHoaDon ct : hoaDon.getChiTietHoaDons()) {
             model.addRow(new Object[]{
                     ct.getDoUong().getTenDoUong(),
                     ct.getSoLuong(),
@@ -135,7 +134,7 @@ public class PaymentDialog extends JDialog {
         calcPanel.add(lblSub, gbc);
 
         gbc.gridx = 1; gbc.weightx = 0;
-        JLabel valSub = new JLabel(df.format(phieuGoiMon.getTongTien()) + " đ", SwingConstants.RIGHT);
+        JLabel valSub = new JLabel(df.format(hoaDon.getTongTien()) + " đ", SwingConstants.RIGHT);
         valSub.setFont(new Font("Segoe UI", Font.BOLD, 14));
         calcPanel.add(valSub, gbc);
 
@@ -166,7 +165,7 @@ public class PaymentDialog extends JDialog {
         // Event xử lý giảm giá
         spnDiscount.addChangeListener(e -> {
             int discountPercent = (int) spnDiscount.getValue();
-            finalAmount = phieuGoiMon.getTongTien() * (100 - discountPercent) / 100.0;
+            finalAmount = hoaDon.getTongTien() * (100 - discountPercent) / 100.0;
             valFinal.setText(df.format(finalAmount) + " đ");
         });
 
@@ -205,8 +204,6 @@ public class PaymentDialog extends JDialog {
     }
 
     private void processPayment() {
-        HoaDon hoaDon = new HoaDon();
-        hoaDon.setPhieuGoiMon(phieuGoiMon);
         hoaDon.setTongTien(finalAmount);
         hoaDon.setNgayTao(LocalDate.now());
         hoaDon.setPhuongThucTT("Tiền mặt");

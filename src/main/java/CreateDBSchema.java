@@ -29,9 +29,8 @@ TRUNCATE TABLE `tai_khoan`;
 TRUNCATE TABLE `nhan_vien`;
 TRUNCATE TABLE `ban`;
 TRUNCATE TABLE `do_uong`;
-TRUNCATE TABLE `phieu_goi_mon`;
-TRUNCATE TABLE `chi_tiet_phieu_goi`;
 TRUNCATE TABLE `hoa_don`;
+TRUNCATE TABLE `chi_tiet_hoa_don`;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. Chèn dữ liệu Nhân Viên

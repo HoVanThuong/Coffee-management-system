@@ -17,7 +17,7 @@ public class Client {
         in = new ObjectInputStream(socket.getInputStream());
     }
 
-    public Response sendRequest(Request request) {
+    public synchronized Response sendRequest(Request request) {
         try {
             out.writeObject(request);
             out.flush();

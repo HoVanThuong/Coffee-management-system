@@ -18,6 +18,9 @@ import java.awt.geom.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import ui.components.SimpleBarChart;
 
 public class ManagerDashboard extends JFrame {
 
@@ -57,6 +60,7 @@ public class ManagerDashboard extends JFrame {
 
     // ── Nav items ─────────────────────────────────────────────
     private static final String[][] NAV_ITEMS = {
+            { "Thống Kê",   "DASHBOARD" },
             { "Thực Đơn",    "MENU" },
             { "Nhân Viên",  "STAFF" },
             { "Hóa Đơn",    "INVOICES" },
@@ -79,6 +83,7 @@ public class ManagerDashboard extends JFrame {
         cardLayout       = new CardLayout();
         mainContentPanel = new JPanel(cardLayout);
         mainContentPanel.setBackground(C_PAGE_BG);
+        mainContentPanel.add(createDashboardPanel(),          "DASHBOARD");
         mainContentPanel.add(createMenuManagementPanel(),     "MENU");
         mainContentPanel.add(createEmployeeManagementPanel(), "STAFF");
         mainContentPanel.add(createInvoiceManagementPanel(),  "INVOICES");
@@ -313,6 +318,123 @@ public class ManagerDashboard extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════
+    // THỐNG KÊ (DASHBOARD)
+    // ══════════════════════════════════════════════════════════
+    private JPanel createDashboardPanel() {
+        JPanel page = buildPageShell("", "Thống Kê", "Tổng quan hoạt động kinh doanh hôm nay");
+
+        JPanel body = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        body.setBackground(C_PAGE_BG);
+        body.setBorder(new EmptyBorder(24, 32, 24, 32));
+
+        JPanel cardRev = createStatCard("Doanh thu hôm nay", "0 VNĐ", C_SUCCESS);
+        JPanel cardOrder = createStatCard("Hóa đơn hôm nay", "0", C_ACCENT);
+        JPanel cardTable = createStatCard("Bàn đang phục vụ", "0", C_WARNING);
+
+        body.add(cardRev);
+        body.add(cardOrder);
+        body.add(cardTable);
+        
+        SimpleBarChart chart = new SimpleBarChart("Doanh thu 7 ngày gần nhất (VNĐ)");
+        chart.setPreferredSize(new Dimension(880, 400));
+        chart.setBorder(new CompoundBorder(
+            new LineBorder(C_BORDER, 1, true),
+            new EmptyBorder(10, 10, 10, 10)
+        ));
+        chart.setBarColor(C_ACCENT);
+        body.add(chart);
+        
+        loadDashboardData(cardRev, cardOrder, cardTable, chart);
+
+        // Add refresh button for dashboard
+        JPanel topBar = (JPanel) page.getComponent(0);
+        JButton btnRef = mkButton("Làm Mới", C_ACCENT);
+        btnRef.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart));
+        topBar.add(btnRef, BorderLayout.EAST);
+
+        page.add(body, BorderLayout.CENTER);
+        return page;
+    }
+
+    private JPanel createStatCard(String title, String initialValue, Color accent) {
+        JPanel card = new JPanel(new BorderLayout(0, 10));
+        card.setBackground(Color.WHITE);
+        card.setPreferredSize(new Dimension(280, 120));
+        card.setBorder(new CompoundBorder(
+            new MatteBorder(4, 0, 0, 0, accent),
+            new EmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.setFont(F_SECTION);
+        lblTitle.setForeground(C_TEXT_MUTED);
+
+        JLabel lblValue = new JLabel(initialValue);
+        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblValue.setForeground(C_TEXT_PRIMARY);
+
+        card.add(lblTitle, BorderLayout.NORTH);
+        card.add(lblValue, BorderLayout.CENTER);
+        
+        card.putClientProperty("valueLabel", lblValue);
+        return card;
+    }
+
+    private void loadDashboardData(JPanel cardRev, JPanel cardOrder, JPanel cardTable, SimpleBarChart chart) {
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                try {
+                    Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
+                    if (resTables.isSuccess() && resTables.getData() != null) {
+                        List<entity.Ban> listBan = (List<entity.Ban>) resTables.getData();
+                        long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
+                        SwingUtilities.invokeLater(() -> ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables)));
+                    }
+
+                    Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
+                    if (resInvoices.isSuccess() && resInvoices.getData() != null) {
+                        List<entity.HoaDon> listHD = (List<entity.HoaDon>) resInvoices.getData();
+                        LocalDate today = LocalDate.now();
+                        long count = 0;
+                        double rev = 0;
+                        
+                        // Prepare chart data (last 7 days)
+                        Map<String, Double> chartData = new LinkedHashMap<>();
+                        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
+                        for (int i = 6; i >= 0; i--) {
+                            chartData.put(today.minusDays(i).format(fmt), 0.0);
+                        }
+                        
+                        for (entity.HoaDon hd : listHD) {
+                            if (hd.getNgayTao() != null) {
+                                if (hd.getNgayTao().equals(today)) {
+                                    count++;
+                                    rev += hd.getTongTien();
+                                }
+                                
+                                String dateStr = hd.getNgayTao().format(fmt);
+                                if (chartData.containsKey(dateStr)) {
+                                    chartData.put(dateStr, chartData.get(dateStr) + hd.getTongTien());
+                                }
+                            }
+                        }
+                        
+                        final long fCount = count;
+                        final double fRev = rev;
+                        SwingUtilities.invokeLater(() -> {
+                            ((JLabel)cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fCount));
+                            ((JLabel)cardRev.getClientProperty("valueLabel")).setText(String.format("%,.0f VNĐ", fRev));
+                            chart.updateData(chartData);
+                        });
+                    }
+                } catch (Exception ex) { ex.printStackTrace(); }
+                return null;
+            }
+        }.execute();
+    }
+
+    // ══════════════════════════════════════════════════════════
     // QUẢN LÝ THỰC ĐƠN
     // ══════════════════════════════════════════════════════════
     private JPanel createMenuManagementPanel() {
@@ -325,51 +447,89 @@ public class ManagerDashboard extends JFrame {
         // Toolbar
         JPanel toolbar = new JPanel(new BorderLayout(12, 0));
         toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 16, 0));
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        actions.setOpaque(false);
+        // Left Actions
+        JPanel actionsLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actionsLeft.setOpaque(false);
+        JButton btnAdd  = mkButton("Thêm Món",  C_SUCCESS);
+        actionsLeft.add(btnAdd);
 
-        String[] menuCols = {"Mã Đồ Uống", "Tên Đồ Uống", "Giá Tiền (VNĐ)", "Loại"};
+        // Right Actions (Search + Refresh)
+        JPanel actionsRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actionsRight.setOpaque(false);
+        
+        JTextField txtSearch = new JTextField(20);
+        txtSearch.putClientProperty("JTextField.placeholderText", "Tìm kiếm món...");
+        styleField(txtSearch);
+        
+        JButton btnRef  = mkButton("Làm Mới",    C_ACCENT);
+        
+        actionsRight.add(txtSearch);
+        actionsRight.add(btnRef);
+
+        toolbar.add(actionsLeft, BorderLayout.WEST);
+        toolbar.add(actionsRight, BorderLayout.EAST);
+
+        String[] menuCols = {"Mã Đồ Uống", "Tên Đồ Uống", "Giá Tiền (VNĐ)", "Loại", "Hành động"};
         DefaultTableModel menuModel = new DefaultTableModel(menuCols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
+            public boolean isCellEditable(int r, int c) { return c == 4; }
         };
         JTable menuTable = buildTable(menuModel);
-        // Center price column
-        centerColumn(menuTable, 2);
-
-        JButton btnAdd  = mkButton("Thêm Món",  C_SUCCESS);
-        JButton btnEdit = mkButton("Sửa Món",   C_WARNING);
-        JButton btnDel  = mkButton("Xóa Món",   C_DANGER);
-        JButton btnRef  = mkButton("Làm Mới",    C_ACCENT);
-
-        btnAdd.addActionListener(e -> showDoUongFormDialog(null, menuModel));
-        btnEdit.addActionListener(e -> {
-            int row = menuTable.getSelectedRow();
-            if (row < 0) { warn("Vui lòng chọn món để sửa!"); return; }
-            DoUong d = new DoUong();
-            d.setMaDoUong((String) menuModel.getValueAt(row, 0));
-            d.setTenDoUong((String) menuModel.getValueAt(row, 1));
-            d.setGiaTien(((String) menuModel.getValueAt(row, 2)).replace(",", ""));
-            d.setLoaiDoUong((String) menuModel.getValueAt(row, 3));
-            showDoUongFormDialog(d, menuModel);
-        });
-        btnDel.addActionListener(e -> {
-            int row = menuTable.getSelectedRow();
-            if (row < 0) { warn("Vui lòng chọn món để xóa!"); return; }
-            String ma  = (String) menuModel.getValueAt(row, 0);
-            String ten = (String) menuModel.getValueAt(row, 1);
-            if (confirm("Chắc chắn xóa món: " + ten + "?")) {
-                try {
-                    Response res = client.sendRequest(new Request(CommandType.MANAGE_MENU_DELETE, ma));
-                    if (res.isSuccess()) { info("Xóa thành công!"); loadMenuData(menuModel); }
-                    else err(res.getMessage());
-                } catch (Exception ex) { ex.printStackTrace(); }
+        
+        // Setup Search Sorter
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(menuModel);
+        menuTable.setRowSorter(sorter);
+        txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            private void search() {
+                String text = txtSearch.getText();
+                if (text.trim().length() == 0) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
+
+        // Center price column
+        centerColumn(menuTable, 2);
+        
+        // Setup Action Column
+        TableActionEvent event = new TableActionEvent() {
+            @Override
+            public void onEdit(int row) {
+                int modelRow = menuTable.convertRowIndexToModel(row);
+                DoUong d = new DoUong();
+                d.setMaDoUong((String) menuModel.getValueAt(modelRow, 0));
+                d.setTenDoUong((String) menuModel.getValueAt(modelRow, 1));
+                d.setGiaTien(((String) menuModel.getValueAt(modelRow, 2)).replace(",", ""));
+                d.setLoaiDoUong((String) menuModel.getValueAt(modelRow, 3));
+                showDoUongFormDialog(d, menuModel);
+            }
+
+            @Override
+            public void onDelete(int row) {
+                if (menuTable.isEditing()) menuTable.getCellEditor().stopCellEditing();
+                int modelRow = menuTable.convertRowIndexToModel(row);
+                String ma  = (String) menuModel.getValueAt(modelRow, 0);
+                String ten = (String) menuModel.getValueAt(modelRow, 1);
+                if (confirm("Chắc chắn xóa món: " + ten + "?")) {
+                    try {
+                        Response res = client.sendRequest(new Request(CommandType.MANAGE_MENU_DELETE, ma));
+                        if (res.isSuccess()) { info("Xóa thành công!"); loadMenuData(menuModel); }
+                        else err(res.getMessage());
+                    } catch (Exception ex) { ex.printStackTrace(); }
+                }
+            }
+        };
+        menuTable.getColumnModel().getColumn(4).setCellRenderer(new TableActionCellRenderer());
+        menuTable.getColumnModel().getColumn(4).setCellEditor(new TableActionCellEditor(event));
+        menuTable.getColumnModel().getColumn(4).setPreferredWidth(120);
+        menuTable.setRowHeight(40);
+
+        btnAdd.addActionListener(e -> showDoUongFormDialog(null, menuModel));
         btnRef.addActionListener(e -> loadMenuData(menuModel));
 
-        for (JButton b : new JButton[]{btnAdd, btnEdit, btnDel, btnRef}) actions.add(b);
-        toolbar.add(actions, BorderLayout.WEST);
         body.add(toolbar, BorderLayout.NORTH);
 
         JScrollPane sp = styledScroll(menuTable);
@@ -443,7 +603,7 @@ public class ManagerDashboard extends JFrame {
                     String price;
                     try { price = String.format("%,.0f", Double.parseDouble(d.getGiaTien())); }
                     catch (NumberFormatException e) { price = d.getGiaTien(); }
-                    model.addRow(new Object[]{d.getMaDoUong(), d.getTenDoUong(), price, d.getLoaiDoUong()});
+                    model.addRow(new Object[]{d.getMaDoUong(), d.getTenDoUong(), price, d.getLoaiDoUong(), ""});
                 }
             }
         } catch (Exception ex) { ex.printStackTrace(); }
@@ -459,9 +619,9 @@ public class ManagerDashboard extends JFrame {
         body.setBackground(C_PAGE_BG);
         body.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        String[] cols = {"Mã NV", "Họ Tên", "Số ĐT", "Chức Vụ", "Ngày Vào Làm", "Ngày Nghỉ"};
+        String[] cols = {"Mã NV", "Họ Tên", "Số ĐT", "Chức Vụ", "Ngày Vào Làm", "Ngày Nghỉ", "Hành động"};
         DefaultTableModel empModel = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
+            public boolean isCellEditable(int r, int c) { return c == 6; }
         };
         JTable empTable = buildTable(empModel);
 
@@ -484,17 +644,20 @@ public class ManagerDashboard extends JFrame {
 
         JPanel toolbar = new JPanel(new BorderLayout(12, 0));
         toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 16, 0));
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
 
         JButton btnAdd  = mkButton("Thêm NV",  C_SUCCESS);
-        JButton btnEdit = mkButton("Sửa NV",   C_WARNING);
-        JButton btnDel  = mkButton("Cho Nghỉ", C_DANGER);
-        JButton btnRef  = mkButton("Làm Mới",  C_ACCENT);
+        left.add(btnAdd);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
+
+        JTextField txtSearch = new JTextField(20);
+        txtSearch.putClientProperty("JTextField.placeholderText", "Tìm kiếm nhân viên...");
+        styleField(txtSearch);
 
         JToggleButton toggleFired = new JToggleButton("Hiện NV đã nghỉ");
         toggleFired.setFont(F_LABEL);
@@ -507,43 +670,68 @@ public class ManagerDashboard extends JFrame {
         toggleFired.setFocusPainted(false);
         toggleFired.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
+        JButton btnRef  = mkButton("Làm Mới",  C_ACCENT);
+
+        right.add(toggleFired);
+        right.add(txtSearch);
+        right.add(btnRef);
+        
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(empModel);
+        empTable.setRowSorter(sorter);
+        txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            private void search() {
+                String text = txtSearch.getText();
+                if (text.trim().length() == 0) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+            }
+        });
+
         loadEmployeeData(empModel, false);
         toggleFired.addActionListener(e -> loadEmployeeData(empModel, toggleFired.isSelected()));
-
-        btnAdd.addActionListener(e -> showEmployeeFormDialog(null, empModel, toggleFired.isSelected()));
-        btnEdit.addActionListener(e -> {
-            int row = empTable.getSelectedRow();
-            if (row < 0) { warn("Vui lòng chọn nhân viên để sửa!"); return; }
-            String maNV = (String) empModel.getValueAt(row, 0);
-            NhanVien nv = new NhanVien();
-            nv.setMaNhanVien(maNV);
-            nv.setHoTen((String) empModel.getValueAt(row, 1));
-            nv.setSdt((String) empModel.getValueAt(row, 2));
-            nv.setChucVu((String) empModel.getValueAt(row, 3));
-            TaiKhoan tk = new TaiKhoan();
-            tk.setTenDangNhap(maNV + "_user");
-            tk.setTaiKhoanQuanLi("Manager".equals(nv.getChucVu()));
-            showEmployeeFormDialog(new Object[]{nv, tk}, empModel, toggleFired.isSelected());
-        });
-        btnDel.addActionListener(e -> {
-            int row = empTable.getSelectedRow();
-            if (row < 0) { warn("Vui lòng chọn nhân viên!"); return; }
-            if (empModel.getValueAt(row, 5) != null && !empModel.getValueAt(row, 5).toString().isEmpty()) {
-                info("Nhân viên này đã nghỉ việc rồi!"); return;
-            }
-            String maNV = (String) empModel.getValueAt(row, 0);
-            if (confirm("Chắc chắn cho nhân viên " + maNV + " thôi việc?")) {
-                try {
-                    Response res = client.sendRequest(new Request(CommandType.MANAGE_EMPLOYEE_DELETE, maNV));
-                    if (res.isSuccess()) { info("Đã cập nhật trạng thái nghỉ việc!"); loadEmployeeData(empModel, toggleFired.isSelected()); }
-                    else err(res.getMessage());
-                } catch (Exception ex) { ex.printStackTrace(); }
-            }
-        });
         btnRef.addActionListener(e -> loadEmployeeData(empModel, toggleFired.isSelected()));
+        btnAdd.addActionListener(e -> showEmployeeFormDialog(null, empModel, toggleFired.isSelected()));
 
-        for (JButton b : new JButton[]{btnAdd, btnEdit, btnDel, btnRef}) left.add(b);
-        right.add(toggleFired);
+        TableActionEvent event = new TableActionEvent() {
+            @Override
+            public void onEdit(int row) {
+                int modelRow = empTable.convertRowIndexToModel(row);
+                String maNV = (String) empModel.getValueAt(modelRow, 0);
+                NhanVien nv = new NhanVien();
+                nv.setMaNhanVien(maNV);
+                nv.setHoTen((String) empModel.getValueAt(modelRow, 1));
+                nv.setSdt((String) empModel.getValueAt(modelRow, 2));
+                nv.setChucVu((String) empModel.getValueAt(modelRow, 3));
+                TaiKhoan tk = new TaiKhoan();
+                tk.setTenDangNhap(maNV + "_user");
+                tk.setTaiKhoanQuanLi("Manager".equals(nv.getChucVu()));
+                showEmployeeFormDialog(new Object[]{nv, tk}, empModel, toggleFired.isSelected());
+            }
+
+            @Override
+            public void onDelete(int row) {
+                if (empTable.isEditing()) empTable.getCellEditor().stopCellEditing();
+                int modelRow = empTable.convertRowIndexToModel(row);
+                if (empModel.getValueAt(modelRow, 5) != null && !empModel.getValueAt(modelRow, 5).toString().isEmpty()) {
+                    info("Nhân viên này đã nghỉ việc rồi!"); return;
+                }
+                String maNV = (String) empModel.getValueAt(modelRow, 0);
+                if (confirm("Chắc chắn cho nhân viên " + maNV + " thôi việc?")) {
+                    try {
+                        Response res = client.sendRequest(new Request(CommandType.MANAGE_EMPLOYEE_DELETE, maNV));
+                        if (res.isSuccess()) { info("Đã cập nhật trạng thái nghỉ việc!"); loadEmployeeData(empModel, toggleFired.isSelected()); }
+                        else err(res.getMessage());
+                    } catch (Exception ex) { ex.printStackTrace(); }
+                }
+            }
+        };
+
+        empTable.getColumnModel().getColumn(6).setCellRenderer(new TableActionCellRenderer());
+        empTable.getColumnModel().getColumn(6).setCellEditor(new TableActionCellEditor(event));
+        empTable.getColumnModel().getColumn(6).setPreferredWidth(120);
+
         toolbar.add(left, BorderLayout.WEST);
         toolbar.add(right, BorderLayout.EAST);
         body.add(toolbar, BorderLayout.NORTH);
@@ -562,7 +750,8 @@ public class ManagerDashboard extends JFrame {
                     model.addRow(new Object[]{
                             n.getMaNhanVien(), n.getHoTen(), n.getSdt(), n.getChucVu(),
                             n.getNgayVaoLam()  != null ? n.getNgayVaoLam().toString()  : "",
-                            n.getNgayThoiViec()!= null ? n.getNgayThoiViec().toString(): ""
+                            n.getNgayThoiViec()!= null ? n.getNgayThoiViec().toString(): "",
+                            ""
                     });
                 }
             }
@@ -647,11 +836,37 @@ public class ManagerDashboard extends JFrame {
         JTable invTable = buildTable(invModel);
         centerColumn(invTable, 4);
 
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
         toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 16, 0));
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.setOpaque(false);
+
+        JTextField txtSearch = new JTextField(20);
+        txtSearch.putClientProperty("JTextField.placeholderText", "Tìm kiếm hóa đơn...");
+        styleField(txtSearch);
+
         JButton btnRef = mkButton("Cập Nhật Dữ Liệu", C_ACCENT);
+
+        right.add(txtSearch);
+        right.add(btnRef);
+        toolbar.add(right, BorderLayout.EAST);
+        
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(invModel);
+        invTable.setRowSorter(sorter);
+        txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            private void search() {
+                String text = txtSearch.getText();
+                if (text.trim().length() == 0) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+            }
+        });
+
         btnRef.addActionListener(e -> loadInvoiceData(invModel));
-        toolbar.add(btnRef);
 
         loadInvoiceData(invModel);
 
@@ -669,8 +884,8 @@ public class ManagerDashboard extends JFrame {
                 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                 for (HoaDon h : (List<HoaDon>) res.getData()) {
                     String ngay  = h.getNgayTao() != null ? h.getNgayTao().format(fmt) : "";
-                    String maBan = (h.getPhieuGoiMon() != null && h.getPhieuGoiMon().getBan() != null)    ? h.getPhieuGoiMon().getBan().getMaBan()      : "N/A";
-                    String nv    = (h.getPhieuGoiMon() != null && h.getPhieuGoiMon().getNhanVien() != null)? h.getPhieuGoiMon().getNhanVien().getHoTen()  : "N/A";
+                    String maBan = (h.getBan() != null) ? h.getBan().getMaBan() : "N/A";
+                    String nv    = (h.getNhanVien() != null) ? h.getNhanVien().getHoTen() : "N/A";
                     model.addRow(new Object[]{h.getMaHoaDon(), ngay, maBan, nv, String.format("%,.0f", h.getTongTien()), h.getGhiChu()});
                 }
             }

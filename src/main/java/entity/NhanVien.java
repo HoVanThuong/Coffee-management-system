@@ -23,7 +23,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"phieuGoiMons", "taiKhoan"})
+@ToString(exclude = {"hoaDons", "taiKhoan"})
 @Builder
 
 @Entity
@@ -56,9 +56,9 @@ public class NhanVien implements Serializable {
     @Column(name = "chuc_vu")
     private String chucVu;
 
-    // NhanVien 1 --- * PhieuGoiMon
+    // NhanVien 1 --- * HoaDon
     @OneToMany(mappedBy = "nhanVien", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<PhieuGoiMon> phieuGoiMons;
+    private List<HoaDon> hoaDons;
 
     // NhanVien 1 --- 1 TaiKhoan
     @OneToOne(mappedBy = "nhanVien", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

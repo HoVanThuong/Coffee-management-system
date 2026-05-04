@@ -17,12 +17,13 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 @Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"phieuGoiMon"})
+@ToString(exclude = {"ban", "nhanVien", "chiTietHoaDons"})
 @Builder
 
 @Entity
@@ -49,8 +50,17 @@ public class HoaDon implements Serializable {
     @Column(name = "tong_tien")
     private Double tongTien;
 
-    // HoaDon 1 --- 1 PhieuGoiMon (HoaDon giữ FK)
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_phieu", nullable = false, unique = true)
-    private PhieuGoiMon phieuGoiMon;
+    // HoaDon * --- 1 Ban
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_ban", nullable = false)
+    private Ban ban;
+
+    // HoaDon * --- 1 NhanVien
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_nhan_vien", nullable = false)
+    private NhanVien nhanVien;
+
+    // HoaDon 1 --- * ChiTietHoaDon
+    @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ChiTietHoaDon> chiTietHoaDons;
 }

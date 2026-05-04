@@ -1,12 +1,12 @@
 /*
- * @ ChiTietPhieuGoi.java    1.0 23
+ * @ ChiTietHoaDon.java    1.0 23
  * Copyright (c) 2024 IUH. All rights reserved
  */
 
 package entity;
 
 /*
- * @description: Entity mapping cho bảng ChiTietPhieuGoi
+ * @description: Entity mapping cho bảng ChiTietHoaDon
  * @author: Ho Van Thuong
  * @date: 23/04/2026
  * @version: 1.0
@@ -21,12 +21,12 @@ import java.io.Serializable;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"phieuGoiMon", "doUong"})
+@ToString(exclude = {"hoaDon", "doUong"})
 @Builder
 
 @Entity
-@Table(name = "chi_tiet_phieu_goi")
-public class ChiTietPhieuGoi implements Serializable {
+@Table(name = "chi_tiet_hoa_don")
+public class ChiTietHoaDon implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -39,12 +39,12 @@ public class ChiTietPhieuGoi implements Serializable {
     @Column(name = "don_gia")
     private Double donGia;
 
-    // ChiTietPhieuGoi * --- 1 PhieuGoiMon
+    // ChiTietHoaDon * --- 1 HoaDon
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_phieu", nullable = false)
-    private PhieuGoiMon phieuGoiMon;
+    @JoinColumn(name = "ma_hoa_don", nullable = false)
+    private HoaDon hoaDon;
 
-    // ChiTietPhieuGoi * --- 1 DoUong
+    // ChiTietHoaDon * --- 1 DoUong
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_do_uong", nullable = false)
     private DoUong doUong;

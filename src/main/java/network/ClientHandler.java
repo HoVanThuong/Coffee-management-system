@@ -252,6 +252,38 @@ public class ClientHandler implements Runnable {
                     response.setSuccess(true);
                     response.setData(invoices);
                     break;
+
+                case CHANGE_PASSWORD:
+                    Object[] pwData = (Object[]) req.getData();
+                    String maTaiKhoan = (String) pwData[0];
+                    String oldPw = (String) pwData[1];
+                    String newPw = (String) pwData[2];
+
+                    EntityManager emPw = JPAUtil.getEntityManager();
+                    emPw.getTransaction().begin();
+                    try {
+                        TaiKhoan tk = emPw.find(TaiKhoan.class, maTaiKhoan);
+                        if (tk == null) {
+                            response.setSuccess(false);
+                            response.setMessage("Tài khoản không tồn tại!");
+                        } else if (!tk.getMatKhau().equals(oldPw)) {
+                            response.setSuccess(false);
+                            response.setMessage("Mật khẩu cũ không đúng!");
+                        } else {
+                            tk.setMatKhau(newPw);
+                            emPw.merge(tk);
+                            response.setSuccess(true);
+                            response.setMessage("Đổi mật khẩu thành công!");
+                        }
+                        emPw.getTransaction().commit();
+                    } catch (Exception e) {
+                        if (emPw.getTransaction().isActive()) emPw.getTransaction().rollback();
+                        response.setSuccess(false);
+                        response.setMessage("Lỗi đổi mật khẩu: " + e.getMessage());
+                    } finally {
+                        emPw.close();
+                    }
+                    break;
             }
         } catch (Exception e) {
             e.printStackTrace();

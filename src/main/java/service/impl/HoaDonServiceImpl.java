@@ -76,12 +76,24 @@ public class HoaDonServiceImpl implements HoaDonService {
 
                 for (ChiTietHoaDon ct : cart) {
                     if (ct.getId() == null) {
-                        ct.setHoaDon(existingPhieu != null ? existingPhieu : phieu);
-                        if (ct.getDoUong() != null) {
-                            entity.DoUong managedDoUong = em.find(entity.DoUong.class, ct.getDoUong().getMaDoUong());
-                            ct.setDoUong(managedDoUong);
+                        TypedQuery<ChiTietHoaDon> checkQuery = em.createQuery(
+                                "SELECT c FROM ChiTietHoaDon c WHERE c.hoaDon.maHoaDon = :maHD AND c.doUong.maDoUong = :maDU", ChiTietHoaDon.class);
+                        checkQuery.setParameter("maHD", existingPhieu.getMaHoaDon());
+                        checkQuery.setParameter("maDU", ct.getDoUong().getMaDoUong());
+
+                        List<ChiTietHoaDon> existingCts = checkQuery.getResultList();
+                        if (!existingCts.isEmpty()) {
+                            ChiTietHoaDon existingCt = existingCts.get(0);
+                            existingCt.setSoLuong(existingCt.getSoLuong() + ct.getSoLuong());
+                            em.merge(existingCt);
+                        } else {
+                            ct.setHoaDon(existingPhieu);
+                            if (ct.getDoUong() != null) {
+                                entity.DoUong managedDoUong = em.find(entity.DoUong.class, ct.getDoUong().getMaDoUong());
+                                ct.setDoUong(managedDoUong);
+                            }
+                            em.persist(ct);
                         }
-                        em.persist(ct);
                     }
                 }
                 existingPhieu.setTongTien(phieu.getTongTien());

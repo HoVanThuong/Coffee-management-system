@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import ui.components.SimpleBarChart;
 import ui.components.WrapLayout;
+import ui.components.SettingsPanel;
 import java.util.stream.Collectors;
 
 public class StaffDashboard extends JFrame {
@@ -77,8 +78,8 @@ public class StaffDashboard extends JFrame {
 
         // Màn hình Thống Kê
         mainContentPanel.add(createDashboardPanel(), "DASHBOARD");
-        // Màn hình sơ đồ bàn
         mainContentPanel.add(createTableLayoutPage(), "TABLE_MAP");
+        mainContentPanel.add(new SettingsPanel(client, currentUser), "SETTINGS");
 
         add(mainContentPanel, BorderLayout.CENTER);
         loadTableData();
@@ -109,12 +110,15 @@ public class StaffDashboard extends JFrame {
         nav.setBackground(C_SIDEBAR_BG);
         nav.setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        JButton btnDash = buildNavButton("Thống Kê", "DASHBOARD");
-        JButton btnMap = buildNavButton("Sơ Đồ Bàn", "TABLE_MAP");
+        JButton btnDash     = buildNavButton("Thống Kê",   "DASHBOARD");
+        JButton btnMap      = buildNavButton("Sơ Đồ Bàn", "TABLE_MAP");
+        JButton btnSettings = buildNavButton("Cài Đặt",    "SETTINGS");
         
         nav.add(btnDash);
         nav.add(Box.createRigidArea(new Dimension(0, 2)));
         nav.add(btnMap);
+        nav.add(Box.createRigidArea(new Dimension(0, 2)));
+        nav.add(btnSettings);
         
         setNavActive(btnDash, true);
         activeNavButton = btnDash;

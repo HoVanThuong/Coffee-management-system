@@ -9,8 +9,7 @@ import network.Response;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.table.*;
 import java.awt.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -22,11 +21,17 @@ public class OrderPanel extends JPanel {
     private final Ban ban;
     private final StaffDashboard parentFrame;
     private HoaDon activeOrder;
-    private List<ChiTietHoaDon> currentCart = new ArrayList<>();
+    private List<ChiTietHoaDon> existingCart = new ArrayList<>();
+    private List<ChiTietHoaDon> newCart = new ArrayList<>();
+    private List<DoUong> allMenuItems = new ArrayList<>();
+    private JTextField txtSearch;
+    private JComboBox<String> cbCategory;
 
     private JPanel menuGrid;
-    private DefaultTableModel cartModel;
-    private JTable cartTable;
+    private DefaultTableModel existingCartModel;
+    private JTable existingCartTable;
+    private DefaultTableModel newCartModel;
+    private JTable newCartTable;
     private JLabel lblTotal;
     private JButton btnPay;
     private final DecimalFormat df = new DecimalFormat("#,##0");
@@ -91,10 +96,36 @@ public class OrderPanel extends JPanel {
         panel.setBackground(BG_LIGHT);
         panel.setBorder(new EmptyBorder(20, 30, 20, 20));
 
+        JPanel topPanel = new JPanel(new BorderLayout(10, 0));
+        topPanel.setOpaque(false);
+        topPanel.setBorder(new EmptyBorder(0, 0, 15, 0));
+
         JLabel lblSearch = new JLabel("Thực đơn đồ uống");
         lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblSearch.setBorder(new EmptyBorder(0, 0, 15, 0));
-        panel.add(lblSearch, BorderLayout.NORTH);
+        
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        filterPanel.setOpaque(false);
+        
+        txtSearch = new JTextField(15);
+        txtSearch.putClientProperty("JTextField.placeholderText", "Tìm kiếm...");
+        txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+        });
+        
+        cbCategory = new JComboBox<>(new String[]{"Tất cả"});
+        cbCategory.addActionListener(e -> filterMenu());
+        
+        filterPanel.add(new JLabel("Tìm:"));
+        filterPanel.add(txtSearch);
+        filterPanel.add(new JLabel("Loại:"));
+        filterPanel.add(cbCategory);
+        
+        topPanel.add(lblSearch, BorderLayout.WEST);
+        topPanel.add(filterPanel, BorderLayout.EAST);
+
+        panel.add(topPanel, BorderLayout.NORTH);
 
         menuGrid = new JPanel(new GridLayout(0, 3, 15, 15));
         menuGrid.setBackground(BG_LIGHT);
@@ -105,6 +136,24 @@ public class OrderPanel extends JPanel {
         panel.add(scroll, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private void filterMenu() {
+        String keyword = txtSearch.getText().toLowerCase().trim();
+        String category = (String) cbCategory.getSelectedItem();
+        if (category == null) category = "Tất cả";
+        
+        menuGrid.removeAll();
+        for (DoUong item : allMenuItems) {
+            boolean matchKeyword = item.getTenDoUong().toLowerCase().contains(keyword);
+            boolean matchCategory = "Tất cả".equals(category) || (item.getLoaiDoUong() != null && item.getLoaiDoUong().equals(category));
+            
+            if (matchKeyword && matchCategory) {
+                menuGrid.add(createDrinkCard(item));
+            }
+        }
+        menuGrid.revalidate();
+        menuGrid.repaint();
     }
 
     private JPanel createCartSection() {
@@ -118,18 +167,38 @@ public class OrderPanel extends JPanel {
         lblCart.setBorder(new EmptyBorder(20, 20, 15, 20));
         panel.add(lblCart, BorderLayout.NORTH);
 
-        // Bảng giỏ hàng
-        String[] cols = {"Món", "SL", "Giá"};
-        cartModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return c == 1; }
+        // Existing Cart Table
+        String[] existingCols = {"Món (Đã đặt)", "SL", "Giá"};
+        existingCartModel = new DefaultTableModel(existingCols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-        cartTable = new JTable(cartModel);
-        styleCartTable();
+        existingCartTable = new JTable(existingCartModel);
+        
+        // New Cart Table
+        String[] newCols = {"Món (Mới gọi)", "SL", "Giá", "Thao Tác"};
+        newCartModel = new DefaultTableModel(newCols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return c == 3; }
+        };
+        newCartTable = new JTable(newCartModel);
+        
+        styleCartTables();
 
-        JScrollPane scroll = new JScrollPane(cartTable);
-        scroll.setBorder(new EmptyBorder(0, 10, 0, 10));
-        scroll.getViewport().setBackground(Color.WHITE);
-        panel.add(scroll, BorderLayout.CENTER);
+        JPanel tableContainer = new JPanel(new GridLayout(2, 1, 0, 10));
+        tableContainer.setOpaque(false);
+        tableContainer.setBorder(new EmptyBorder(0, 10, 0, 10));
+        
+        JScrollPane existingScroll = new JScrollPane(existingCartTable);
+        existingScroll.getViewport().setBackground(Color.WHITE);
+        existingScroll.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(230, 230, 235)), "Đã Đặt"));
+        
+        JScrollPane newScroll = new JScrollPane(newCartTable);
+        newScroll.getViewport().setBackground(Color.WHITE);
+        newScroll.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(230, 230, 235)), "Gọi Thêm"));
+        
+        tableContainer.add(existingScroll);
+        tableContainer.add(newScroll);
+
+        panel.add(tableContainer, BorderLayout.CENTER);
 
         // Khu vực thanh toán (South)
         JPanel footer = new JPanel(new BorderLayout(0, 15));
@@ -168,20 +237,38 @@ public class OrderPanel extends JPanel {
         return panel;
     }
 
-    private void styleCartTable() {
-        cartTable.setRowHeight(45);
-        cartTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        cartTable.setSelectionBackground(new Color(245, 246, 250));
-        cartTable.setShowVerticalLines(false);
-        cartTable.setIntercellSpacing(new Dimension(0, 0));
-
+    private void styleCartTables() {
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        cartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
 
-        cartTable.getTableHeader().setBackground(Color.WHITE);
-        cartTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        cartTable.getTableHeader().setForeground(new Color(150, 150, 160));
+        // Style Existing Cart
+        existingCartTable.setRowHeight(45);
+        existingCartTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        existingCartTable.setSelectionBackground(new Color(245, 246, 250));
+        existingCartTable.setShowVerticalLines(false);
+        existingCartTable.setIntercellSpacing(new Dimension(0, 0));
+        existingCartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        existingCartTable.getTableHeader().setBackground(Color.WHITE);
+        existingCartTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        existingCartTable.getTableHeader().setForeground(new Color(150, 150, 160));
+
+        // Style New Cart
+        newCartTable.setRowHeight(45);
+        newCartTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        newCartTable.setSelectionBackground(new Color(245, 246, 250));
+        newCartTable.setShowVerticalLines(false);
+        newCartTable.setIntercellSpacing(new Dimension(0, 0));
+        newCartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        
+        ActionPanelEditorRenderer actionRenderer = new ActionPanelEditorRenderer();
+        newCartTable.getColumnModel().getColumn(3).setCellRenderer(actionRenderer);
+        newCartTable.getColumnModel().getColumn(3).setCellEditor(actionRenderer);
+        newCartTable.getColumnModel().getColumn(3).setPreferredWidth(120);
+        newCartTable.getColumnModel().getColumn(3).setMinWidth(120);
+        
+        newCartTable.getTableHeader().setBackground(Color.WHITE);
+        newCartTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        newCartTable.getTableHeader().setForeground(new Color(150, 150, 160));
     }
 
     private JButton createStyledButton(String text, Color bg) {
@@ -196,16 +283,111 @@ public class OrderPanel extends JPanel {
         return btn;
     }
 
+    private void changeQuantityByRow(int row, int delta) {
+        if (row >= 0 && row < newCart.size()) {
+            ChiTietHoaDon ct = newCart.get(row);
+            int newQty = ct.getSoLuong() + delta;
+            if (newQty > 0) {
+                ct.setSoLuong(newQty);
+                updateCartTable();
+            } else if (newQty == 0) {
+                removeCartItemByRow(row);
+            }
+        }
+    }
+
+    private void removeCartItemByRow(int row) {
+        if (row >= 0 && row < newCart.size()) {
+            newCart.remove(row);
+            updateCartTable();
+        }
+    }
+
+    class ActionPanelEditorRenderer extends AbstractCellEditor implements TableCellRenderer, TableCellEditor {
+        private JPanel renderPanel;
+        private JPanel editPanel;
+        private int currentRow;
+
+        public ActionPanelEditorRenderer() {
+            renderPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            renderPanel.setOpaque(true);
+            renderPanel.add(createCartButton("-", ACCENT_BLUE));
+            renderPanel.add(createCartButton("+", SUCCESS_GREEN));
+            renderPanel.add(createCartButton("X", new Color(231, 76, 60)));
+
+            editPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            editPanel.setOpaque(true);
+            JButton btnMinusEdit = createCartButton("-", ACCENT_BLUE);
+            JButton btnPlusEdit = createCartButton("+", SUCCESS_GREEN);
+            JButton btnDeleteEdit = createCartButton("X", new Color(231, 76, 60));
+
+            btnMinusEdit.addActionListener(e -> {
+                fireEditingStopped();
+                changeQuantityByRow(currentRow, -1);
+            });
+            btnPlusEdit.addActionListener(e -> {
+                fireEditingStopped();
+                changeQuantityByRow(currentRow, 1);
+            });
+            btnDeleteEdit.addActionListener(e -> {
+                fireEditingStopped();
+                removeCartItemByRow(currentRow);
+            });
+
+            editPanel.add(btnMinusEdit);
+            editPanel.add(btnPlusEdit);
+            editPanel.add(btnDeleteEdit);
+        }
+
+        private JButton createCartButton(String text, Color bg) {
+            JButton btn = new JButton(text);
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            btn.setForeground(Color.WHITE);
+            btn.setBackground(bg);
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btn.setMargin(new Insets(2, 5, 2, 5));
+            return btn;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            renderPanel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            return renderPanel;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            currentRow = row;
+            editPanel.setBackground(table.getSelectionBackground());
+            return editPanel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null;
+        }
+    }
+
     private void loadMenu() {
         try {
             Response response = client.sendRequest(new Request(CommandType.GET_MENU, null));
             if (response.isSuccess()) {
-                List<DoUong> menuItems = (List<DoUong>) response.getData();
-                menuGrid.removeAll();
-                for (DoUong item : menuItems) {
-                    menuGrid.add(createDrinkCard(item));
+                allMenuItems = (List<DoUong>) response.getData();
+                
+                cbCategory.removeAllItems();
+                cbCategory.addItem("Tất cả");
+                List<String> categories = new ArrayList<>();
+                for (DoUong item : allMenuItems) {
+                    String cat = item.getLoaiDoUong();
+                    if (cat != null && !cat.trim().isEmpty() && !categories.contains(cat)) {
+                        categories.add(cat);
+                        cbCategory.addItem(cat);
+                    }
                 }
-                menuGrid.revalidate();
+                
+                filterMenu();
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
@@ -244,7 +426,7 @@ public class OrderPanel extends JPanel {
     }
 
     private void addToCart(DoUong drink) {
-        for (ChiTietHoaDon ct : currentCart) {
+        for (ChiTietHoaDon ct : newCart) {
             if (ct.getDoUong().getMaDoUong().equals(drink.getMaDoUong())) {
                 ct.setSoLuong(ct.getSoLuong() + 1);
                 updateCartTable();
@@ -255,24 +437,39 @@ public class OrderPanel extends JPanel {
         newCt.setDoUong(drink);
         newCt.setSoLuong(1);
         newCt.setDonGia(Double.parseDouble(drink.getGiaTien()));
-        currentCart.add(newCt);
+        newCart.add(newCt);
         updateCartTable();
     }
 
     private void updateCartTable() {
-        cartModel.setRowCount(0);
+        existingCartModel.setRowCount(0);
+        newCartModel.setRowCount(0);
         double total = 0;
-        for (ChiTietHoaDon ct : currentCart) {
+        
+        for (ChiTietHoaDon ct : existingCart) {
             double lineTotal = ct.getSoLuong() * ct.getDonGia();
-            cartModel.addRow(new Object[]{
+            existingCartModel.addRow(new Object[]{
                     ct.getDoUong().getTenDoUong(),
                     ct.getSoLuong(),
                     df.format(lineTotal)
             });
             total += lineTotal;
         }
+
+        for (ChiTietHoaDon ct : newCart) {
+            double lineTotal = ct.getSoLuong() * ct.getDonGia();
+            newCartModel.addRow(new Object[]{
+                    ct.getDoUong().getTenDoUong(),
+                    ct.getSoLuong(),
+                    df.format(lineTotal),
+                    ""
+            });
+            total += lineTotal;
+        }
+
         lblTotal.setText(df.format(total) + " VND");
         btnPay.setVisible(activeOrder != null);
+        btnPay.setEnabled(newCart.isEmpty());
     }
 
     // Giữ nguyên logic loadData, loadActiveOrder, confirmOrder và handlePayment từ code gốc của bạn
@@ -283,17 +480,41 @@ public class OrderPanel extends JPanel {
             Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
             if (response.isSuccess() && response.getData() != null) {
                 activeOrder = (HoaDon) response.getData();
-                currentCart = activeOrder.getChiTietHoaDons();
+                
+                // Gộp các món trùng lặp từ server (nếu DB đang có dữ liệu cũ bị trùng)
+                existingCart.clear();
+                if (activeOrder.getChiTietHoaDons() != null) {
+                    for (ChiTietHoaDon ct : activeOrder.getChiTietHoaDons()) {
+                        boolean found = false;
+                        for (ChiTietHoaDon existing : existingCart) {
+                            if (existing.getDoUong().getMaDoUong().equals(ct.getDoUong().getMaDoUong())) {
+                                existing.setSoLuong(existing.getSoLuong() + ct.getSoLuong());
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            existingCart.add(ct);
+                        }
+                    }
+                }
+                
+                newCart.clear();
                 updateCartTable();
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
 
      private void confirmOrder() {
-        if (currentCart.isEmpty()) {
+        if (existingCart.isEmpty() && newCart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống, hãy chọn món trước!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (newCart.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Không có món nào mới được gọi thêm!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
                 this,
                 "Xác nhận gửi Order cho bàn " + ban.getMaBan() + "?",
@@ -301,10 +522,10 @@ public class OrderPanel extends JPanel {
                 JOptionPane.YES_NO_OPTION
         );
         if (confirm != JOptionPane.YES_OPTION) return;
+        
         double total = 0;
-        for (ChiTietHoaDon ct : currentCart) {
-            total += ct.getSoLuong() * ct.getDonGia();
-        }
+        for (ChiTietHoaDon ct : existingCart) total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDon ct : newCart) total += ct.getSoLuong() * ct.getDonGia();
 
         if (activeOrder == null) {
             activeOrder = new HoaDon();
@@ -317,9 +538,9 @@ public class OrderPanel extends JPanel {
         activeOrder.setNgayTao(java.time.LocalDate.now());
 
         List<ChiTietHoaDon> itemsToSend = new ArrayList<>();
-        for (ChiTietHoaDon item : currentCart) {
+        for (ChiTietHoaDon item : newCart) {
             ChiTietHoaDon cleanItem = new ChiTietHoaDon();
-            cleanItem.setId(item.getId());
+            cleanItem.setId(null);
             cleanItem.setSoLuong(item.getSoLuong());
             cleanItem.setDonGia(item.getDonGia());
             cleanItem.setDoUong(item.getDoUong());

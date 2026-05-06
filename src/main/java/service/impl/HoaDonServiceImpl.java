@@ -136,15 +136,24 @@ public class HoaDonServiceImpl implements HoaDonService {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            HoaDon attachedHoaDon = em.merge(hoaDon);
-            attachedHoaDon.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
-            em.persist(attachedHoaDon);
 
-            Ban banToFree = em.find(Ban.class, attachedHoaDon.getBan().getMaBan());
+            // Tìm trực tiếp bằng ID thay vì merge object phức tạp từ client
+            HoaDon managed = em.find(HoaDon.class, hoaDon.getMaHoaDon());
+            if (managed == null) {
+                tr.rollback();
+                return false;
+            }
+
+            managed.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
+            managed.setTongTien(hoaDon.getTongTien());
+            if (hoaDon.getNgayTao() != null)      managed.setNgayTao(hoaDon.getNgayTao());
+            if (hoaDon.getPhuongThucTT() != null) managed.setPhuongThucTT(hoaDon.getPhuongThucTT());
+
+            Ban banToFree = em.find(Ban.class, managed.getBan().getMaBan());
             if (banToFree != null) {
                 banToFree.setTrangThai(TRANG_THAI_BAN_TRONG);
-                em.merge(banToFree);
             }
+
             tr.commit();
             return true;
         } catch (Exception e) {

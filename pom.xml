@@ -70,6 +70,23 @@
         <artifactId>flatlaf</artifactId>
         <version>3.4</version>
     </dependency>
+    <!-- Tạo mã QR -->
+    <dependency>
+        <groupId>com.google.zxing</groupId>
+        <artifactId>core</artifactId>
+        <version>3.5.3</version>
+    </dependency>
+    <dependency>
+        <groupId>com.google.zxing</groupId>
+        <artifactId>javase</artifactId>
+        <version>3.5.3</version>
+    </dependency>
+    <!-- Gọi API (nếu cần) -->
+    <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>4.12.0</version>
+    </dependency>
   </dependencies>
 
   <build>

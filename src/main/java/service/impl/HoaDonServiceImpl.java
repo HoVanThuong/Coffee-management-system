@@ -54,55 +54,59 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public boolean handleOrderFood(HoaDon phieu, List<ChiTietHoaDon> cart) {
+        public boolean handleOrderFood(HoaDon phieu, List<ChiTietHoaDon> cart) {
         EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
 
-            TypedQuery<HoaDon> queryOrder = em.createQuery("SELECT p FROM HoaDon p WHERE p.ban.maBan = :maBan AND p.trangThai = 'Chưa thanh toán'", HoaDon.class);
+            Ban managedBan = em.find(Ban.class, phieu.getBan().getMaBan());
+            entity.NhanVien managedNV = em.find(entity.NhanVien.class, phieu.getNhanVien().getMaNhanVien());
+
+            TypedQuery<HoaDon> queryOrder = em.createQuery(
+                    "SELECT p FROM HoaDon p WHERE p.ban.maBan = :maBan AND p.trangThai = 'Chưa thanh toán'", HoaDon.class);
             queryOrder.setParameter("maBan", phieu.getBan().getMaBan());
+
             HoaDon existingPhieu = null;
             try {
                 existingPhieu = queryOrder.getSingleResult();
-            } catch (NoResultException e) {
-            }
+            } catch (NoResultException e) { }
 
             if (existingPhieu != null) {
+
                 for (ChiTietHoaDon ct : cart) {
-                    ct.setHoaDon(existingPhieu);
-                    if (ct.getDoUong() != null) {
-                        ct.setDoUong(em.merge(ct.getDoUong())); 
-                    }
-                    if (ct.getId() != null) {
-                        em.merge(ct);
-                    } else {
+                    if (ct.getId() == null) {
+                        ct.setHoaDon(existingPhieu != null ? existingPhieu : phieu);
+                        if (ct.getDoUong() != null) {
+                            entity.DoUong managedDoUong = em.find(entity.DoUong.class, ct.getDoUong().getMaDoUong());
+                            ct.setDoUong(managedDoUong);
+                        }
                         em.persist(ct);
                     }
                 }
                 existingPhieu.setTongTien(phieu.getTongTien());
                 em.merge(existingPhieu);
             } else {
-                if (phieu.getBan() != null) phieu.setBan(em.merge(phieu.getBan()));
-                if (phieu.getNhanVien() != null) phieu.setNhanVien(em.merge(phieu.getNhanVien()));
-                
+                phieu.setBan(managedBan);
+                phieu.setNhanVien(managedNV);
                 phieu.setTrangThai(TRANG_THAI_CHUA_THANH_TOAN);
-                em.persist(phieu);
-                
+
+                em.persist(phieu); // Lưu hóa đơn trước
+
                 for (ChiTietHoaDon ct : cart) {
                     ct.setHoaDon(phieu);
                     if (ct.getDoUong() != null) {
-                        ct.setDoUong(em.merge(ct.getDoUong())); 
+                        ct.setDoUong(em.merge(ct.getDoUong()));
                     }
                     em.persist(ct);
                 }
-                
-                Ban ban = em.find(Ban.class, phieu.getBan().getMaBan());
-                if (ban != null) {
-                    ban.setTrangThai(TRANG_THAI_BAN_CO_KHACH);
-                    em.merge(ban);
+
+                if (managedBan != null) {
+                    managedBan.setTrangThai(TRANG_THAI_BAN_CO_KHACH);
+                    em.merge(managedBan);
                 }
             }
+
             tr.commit();
             return true;
         } catch (Exception e) {

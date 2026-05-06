@@ -37,8 +37,8 @@ public class ReceiptDialog extends JDialog {
     private static final Color C_SUCCESS = new Color(39, 174, 96);
     private static final Color C_DASH = new Color(200, 200, 210);
 
-    public ReceiptDialog(JDialog parent, Client client, HoaDon hoaDon, double finalAmount) {
-        super(parent, "Hóa Đơn Thanh Toán", true);
+    public ReceiptDialog(Window parent, Client client, HoaDon hoaDon, double finalAmount) {
+        super(parent, "Hóa Đơn Thanh Toán", ModalityType.APPLICATION_MODAL);
         this.client = client;
         this.hoaDon = hoaDon;
         this.finalAmount = finalAmount;

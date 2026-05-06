@@ -31,6 +31,7 @@ public class ManagerDashboard extends JFrame {
     private CardLayout cardLayout;
     private JPanel mainContentPanel;
     private JButton activeNavButton = null;
+    private List<HoaDon> currentInvoices;
 
     // ── Palette ──────────────────────────────────────────────
     private static final Color C_SIDEBAR_BG   = new Color(15,  17,  23);   // near-black
@@ -832,12 +833,47 @@ public class ManagerDashboard extends JFrame {
         body.setBackground(C_PAGE_BG);
         body.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        String[] cols = {"Mã Hóa Đơn","Ngày Thanh Toán","Mã Bàn","Nhân Viên","Tổng Tiền (VNĐ)","Ghi Chú"};
+        String[] cols = {"Mã Hóa Đơn","Ngày Thanh Toán","Mã Bàn","Nhân Viên","Tổng Tiền (VNĐ)","Trạng Thái","Ghi Chú"};
         DefaultTableModel invModel = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         JTable invTable = buildTable(invModel);
         centerColumn(invTable, 4);
+        centerColumn(invTable, 5);
+
+        // Highlight "Trạng thái" with color
+        invTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int r, int c) {
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, sel, foc, r, c);
+                l.setHorizontalAlignment(SwingConstants.CENTER);
+                String val = (v != null) ? v.toString() : "";
+                if (sel) {
+                    l.setForeground(Color.WHITE);
+                } else {
+                    if ("Đã thanh toán".equals(val)) l.setForeground(C_SUCCESS);
+                    else if ("Chưa thanh toán".equals(val)) l.setForeground(C_DANGER);
+                    else l.setForeground(C_TEXT_PRIMARY);
+                }
+                return l;
+            }
+        });
+
+        invTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = invTable.getSelectedRow();
+                    if (row != -1) {
+                        int modelRow = invTable.convertRowIndexToModel(row);
+                        if (currentInvoices != null && modelRow < currentInvoices.size()) {
+                            HoaDon h = currentInvoices.get(modelRow);
+                            new ReceiptDialog(ManagerDashboard.this, client, h, h.getTongTien()).setVisible(true);
+                        }
+                    }
+                }
+            }
+        });
 
         JPanel toolbar = new JPanel(new BorderLayout(12, 0));
         toolbar.setOpaque(false);
@@ -884,12 +920,14 @@ public class ManagerDashboard extends JFrame {
         try {
             Response res = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
             if (res.isSuccess() && res.getData() != null) {
+                currentInvoices = (List<HoaDon>) res.getData();
                 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                for (HoaDon h : (List<HoaDon>) res.getData()) {
+                for (HoaDon h : currentInvoices) {
                     String ngay  = h.getNgayTao() != null ? h.getNgayTao().format(fmt) : "";
                     String maBan = (h.getBan() != null) ? h.getBan().getMaBan() : "N/A";
                     String nv    = (h.getNhanVien() != null) ? h.getNhanVien().getHoTen() : "N/A";
-                    model.addRow(new Object[]{h.getMaHoaDon(), ngay, maBan, nv, String.format("%,.0f", h.getTongTien()), h.getGhiChu()});
+                    String tt    = h.getTrangThai() != null ? h.getTrangThai() : "Đã thanh toán";
+                    model.addRow(new Object[]{h.getMaHoaDon(), ngay, maBan, nv, String.format("%,.0f", h.getTongTien()), tt, h.getGhiChu()});
                 }
             }
         } catch (Exception ex) { ex.printStackTrace(); }

@@ -16,7 +16,12 @@ public class HoaDonDaoImpl implements HoaDonDao {
     public List<HoaDon> findAll() {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            return em.createQuery("SELECT hd FROM HoaDon hd LEFT JOIN FETCH hd.ban LEFT JOIN FETCH hd.nhanVien ORDER BY hd.ngayTao DESC", HoaDon.class).getResultList();
+            return em.createQuery("SELECT DISTINCT hd FROM HoaDon hd " +
+                    "LEFT JOIN FETCH hd.ban " +
+                    "LEFT JOIN FETCH hd.nhanVien " +
+                    "LEFT JOIN FETCH hd.chiTietHoaDons ct " +
+                    "LEFT JOIN FETCH ct.doUong " +
+                    "ORDER BY hd.ngayTao DESC", HoaDon.class).getResultList();
         } finally {
             em.close();
         }

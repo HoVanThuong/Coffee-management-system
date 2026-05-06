@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import ui.components.SimpleBarChart;
+import ui.components.SettingsPanel;
 
 public class ManagerDashboard extends JFrame {
 
@@ -64,6 +65,7 @@ public class ManagerDashboard extends JFrame {
             { "Thực Đơn",    "MENU" },
             { "Nhân Viên",  "STAFF" },
             { "Hóa Đơn",    "INVOICES" },
+            { "Cài Đặt",    "SETTINGS" },
     };
 
     public ManagerDashboard(Client client, TaiKhoan taiKhoan) {
@@ -87,6 +89,7 @@ public class ManagerDashboard extends JFrame {
         mainContentPanel.add(createMenuManagementPanel(),     "MENU");
         mainContentPanel.add(createEmployeeManagementPanel(), "STAFF");
         mainContentPanel.add(createInvoiceManagementPanel(),  "INVOICES");
+        mainContentPanel.add(new SettingsPanel(client, taiKhoan), "SETTINGS");
         add(mainContentPanel, BorderLayout.CENTER);
     }
 

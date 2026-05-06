@@ -289,14 +289,22 @@ public class OrderPanel extends JPanel {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    private void confirmOrder() {
+     private void confirmOrder() {
         if (currentCart.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Giỏ hàng trống!");
+            JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống, hãy chọn món trước!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Xác nhận gửi Order cho bàn " + ban.getMaBan() + "?",
+                "Xác nhận",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm != JOptionPane.YES_OPTION) return;
         double total = 0;
-        for (ChiTietHoaDon ct : currentCart) total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDon ct : currentCart) {
+            total += ct.getSoLuong() * ct.getDonGia();
+        }
 
         if (activeOrder == null) {
             activeOrder = new HoaDon();
@@ -305,24 +313,36 @@ public class OrderPanel extends JPanel {
             activeOrder.setNhanVien(currentUser.getNhanVien());
             activeOrder.setTrangThai("Chưa thanh toán");
         }
-        activeOrder.setChiTietHoaDons(currentCart);
         activeOrder.setTongTien(total);
         activeOrder.setNgayTao(java.time.LocalDate.now());
 
-        List<ChiTietHoaDon> newItems = new ArrayList<>();
-        for (ChiTietHoaDon ct : currentCart) {
-            if (ct.getId() == null) newItems.add(ct);
+        List<ChiTietHoaDon> itemsToSend = new ArrayList<>();
+        for (ChiTietHoaDon item : currentCart) {
+            ChiTietHoaDon cleanItem = new ChiTietHoaDon();
+            cleanItem.setId(item.getId());
+            cleanItem.setSoLuong(item.getSoLuong());
+            cleanItem.setDonGia(item.getDonGia());
+            cleanItem.setDoUong(item.getDoUong());
+            itemsToSend.add(cleanItem);
         }
 
         try {
-            Response res = client.sendRequest(new Request(CommandType.ORDER_FOOD, new Object[]{activeOrder, newItems}));
-            if (res.isSuccess()) {
-                JOptionPane.showMessageDialog(this, "Đã xác nhận order!");
-                parentFrame.showTablesView();
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-    }
+            Object[] dataToSend = new Object[]{ activeOrder, itemsToSend };
+            Request request = new Request(CommandType.ORDER_FOOD, dataToSend);
 
+            Response res = client.sendRequest(request);
+
+            if (res.isSuccess()) {
+                JOptionPane.showMessageDialog(this, "Đã gửi Order thành công!");
+                parentFrame.showTablesView();
+            } else {
+                JOptionPane.showMessageDialog(this, "Server từ chối: " + res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Lỗi kết nối máy chủ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
     private void handlePayment() {
         if (activeOrder != null) {
             PaymentDialog paymentDialog = new PaymentDialog(parentFrame, client, activeOrder);

@@ -45,7 +45,6 @@ public class PaymentDialog extends JDialog {
     private JLabel lblQrImage;
     private JLabel lblQrStatus;
     private JPanel centerWrapper;
-    private ScheduledExecutorService pollingExecutor;
 
     // ── Colors ─────────────────────────────────────────────────────
     private static final Color ACCENT_BLUE = new Color(0, 150, 255);
@@ -68,12 +67,7 @@ public class PaymentDialog extends JDialog {
         setLayout(new BorderLayout());
         getContentPane().setBackground(Color.WHITE);
 
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
-                stopPolling();
-            }
-        });
+        getContentPane().setBackground(Color.WHITE);
 
         // ── QR side panel (LEFT, hidden initially) ─────────────────
         qrSidePanel = buildQrSidePanel();
@@ -334,9 +328,7 @@ public class PaymentDialog extends JDialog {
             qrSidePanel.setVisible(true);
             setSize(WIDTH_QR, HEIGHT);
             loadQrCode();
-            startPolling();
         } else {
-            stopPolling();
             qrSidePanel.setVisible(false);
             setSize(WIDTH_NORMAL, HEIGHT);
         }
@@ -382,37 +374,6 @@ public class PaymentDialog extends JDialog {
         }.execute();
     }
 
-    // ── Polling mỗi 5 giây ────────────────────────────────────────
-    private void startPolling() {
-        stopPolling();
-        pollingExecutor = Executors.newSingleThreadScheduledExecutor();
-        pollingExecutor.scheduleAtFixedRate(() -> {
-            try {
-                Response res = client.sendRequest(
-                        new Request(CommandType.GET_ORDER, hoaDon.getBan().getMaBan()));
-                if (!res.isSuccess()) {
-                    SwingUtilities.invokeLater(() -> {
-                        stopPolling();
-                        JOptionPane.showMessageDialog(PaymentDialog.this,
-                                "Thanh toán đã được xác nhận!", "Thành công",
-                                JOptionPane.INFORMATION_MESSAGE);
-                        dispose();
-                        parentFrame.showTablesView();
-                    });
-                } else {
-                    SwingUtilities.invokeLater(() -> lblQrStatus.setText(
-                            "<html><center>Đang chờ thanh toán...<br>(tự động kiểm tra mỗi 5 giây)</center></html>"));
-                }
-            } catch (Exception ignored) {
-            }
-        }, 5, 5, TimeUnit.SECONDS);
-    }
-
-    private void stopPolling() {
-        if (pollingExecutor != null && !pollingExecutor.isShutdown()) {
-            pollingExecutor.shutdownNow();
-        }
-    }
 
     // ── Hàng nút bấm ─────────────────────────────────────────────
     private JPanel createButtonRow() {
@@ -423,7 +384,6 @@ public class PaymentDialog extends JDialog {
         JButton btnCancel = new JButton("Hủy");
         styleButton(btnCancel, Color.WHITE, TEXT_DARK, true);
         btnCancel.addActionListener(e -> {
-            stopPolling();
             dispose();
         });
 
@@ -440,7 +400,6 @@ public class PaymentDialog extends JDialog {
     // PAYMENT PROCESSING
     // ══════════════════════════════════════════════════════════════
     private void processPayment() {
-        stopPolling();
         hoaDon.setTongTien(finalAmount);
         hoaDon.setNgayTao(LocalDate.now());
         hoaDon.setPhuongThucTT("QR".equals(selectedMethod) ? "Chuyển khoản" : "Tiền mặt");

@@ -35,4 +35,21 @@ public class BanServiceImpl implements BanService {
 
         return banDao.updateTrangThaiBan(maBan, standardizedStatus);
     }
+    @Override
+    public boolean addBan(Ban ban) {
+        if (ban == null || ban.getMaBan() == null) return false;
+        return banDao.insert(ban);
+    }
+
+    @Override
+    public boolean updateBan(Ban ban) {
+        if (ban == null || ban.getMaBan() == null) return false;
+        return banDao.update(ban);
+    }
+
+    @Override
+    public boolean deleteBan(String maBan) {
+        if (maBan == null || maBan.isEmpty()) return false;
+        return banDao.delete(maBan);
+    }
 }

@@ -111,7 +111,7 @@ public class HoaDonServiceImpl implements HoaDonService {
 
                 for (ChiTietHoaDon ct : cart) {
                     ct.setHoaDon(phieu);
-                    ct.setId(util.IdGenerator.generateChiTietHoaDonId());
+                    ct.setId("CT" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
                     if (ct.getDoUong() != null) {
                         ct.setDoUong(em.merge(ct.getDoUong()));
                     }

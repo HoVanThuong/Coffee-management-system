@@ -118,13 +118,13 @@ public class LoginFrame extends JFrame {
         btnLogin.addActionListener(e -> handleLogin());
         loginPanel.add(btnLogin, gbc);
 
-//        // Forgot password link
-//        gbc.gridy++;
-//        JLabel lblForgotPassword = new JLabel("Quên mật khẩu?");
-//        lblForgotPassword.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-//        lblForgotPassword.setForeground(Color.BLUE);
-//        lblForgotPassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
-//        loginPanel.add(lblForgotPassword, gbc);
+        // // Forgot password link
+        // gbc.gridy++;
+        // JLabel lblForgotPassword = new JLabel("Quên mật khẩu?");
+        // lblForgotPassword.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        // lblForgotPassword.setForeground(Color.BLUE);
+        // lblForgotPassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // loginPanel.add(lblForgotPassword, gbc);
 
         splitPane.setLeftComponent(imagePanel);
         splitPane.setRightComponent(loginPanel);
@@ -135,7 +135,7 @@ public class LoginFrame extends JFrame {
     private void addPlaceholderStyle(JTextField textField, String placeholder) {
         textField.setText(placeholder);
         textField.setForeground(Color.GRAY);
-        
+
         if (textField instanceof JPasswordField) {
             ((JPasswordField) textField).setEchoChar((char) 0);
         }
@@ -183,7 +183,8 @@ public class LoginFrame extends JFrame {
 
         if (res.isSuccess()) {
             TaiKhoan loggedInTk = (TaiKhoan) res.getData();
-            JOptionPane.showMessageDialog(this, "Đăng nhập thành công! Chào mừng " + loggedInTk.getNhanVien().getHoTen());
+            JOptionPane.showMessageDialog(this,
+                    "Đăng nhập thành công! Chào mừng " + loggedInTk.getNhanVien().getHoTen());
             this.dispose();
 
             if (loggedInTk.isTaiKhoanQuanLi()) {
@@ -202,7 +203,8 @@ public class LoginFrame extends JFrame {
             client.connect();
             SwingUtilities.invokeLater(() -> new LoginFrame(client).setVisible(true));
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Không thể kết nối đến Server! Vui lòng kiểm tra lại.", "Lỗi Kết Nối", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Không thể kết nối đến Server! Vui lòng kiểm tra lại.", "Lỗi Kết Nối",
+                    JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }

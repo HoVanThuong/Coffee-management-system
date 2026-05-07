@@ -63,6 +63,7 @@ public class ManagerDashboard extends JFrame {
     // ── Nav items ─────────────────────────────────────────────
     private static final String[][] NAV_ITEMS = {
             { "Thống Kê",   "DASHBOARD" },
+            { "Bàn", "TABLES" },
             { "Thực Đơn",    "MENU" },
             { "Nhân Viên",  "STAFF" },
             { "Hóa Đơn",    "INVOICES" },
@@ -87,13 +88,180 @@ public class ManagerDashboard extends JFrame {
         mainContentPanel = new JPanel(cardLayout);
         mainContentPanel.setBackground(C_PAGE_BG);
         mainContentPanel.add(createDashboardPanel(),          "DASHBOARD");
+        mainContentPanel.add(createTableManagementPanel(),    "TABLES"); // THÊM DÒNG NÀY
         mainContentPanel.add(createMenuManagementPanel(),     "MENU");
         mainContentPanel.add(createEmployeeManagementPanel(), "STAFF");
         mainContentPanel.add(createInvoiceManagementPanel(),  "INVOICES");
         mainContentPanel.add(new SettingsPanel(client, taiKhoan), "SETTINGS");
         add(mainContentPanel, BorderLayout.CENTER);
     }
+    // ══════════════════════════════════════════════════════════
+    // QUẢN LÝ BÀN
+    // ══════════════════════════════════════════════════════════
+    private JPanel createTableManagementPanel() {
+        JPanel page = buildPageShell("", "Quản Lý Bàn", "Quản lý danh sách các bàn trong quán");
 
+        JPanel body = new JPanel(new BorderLayout(0, 16));
+        body.setBackground(C_PAGE_BG);
+        body.setBorder(new EmptyBorder(24, 32, 24, 32));
+
+        // Toolbar: Thêm bàn và Tìm kiếm
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 16, 0));
+
+        JButton btnAdd = mkButton("Thêm Bàn Mới", C_SUCCESS);
+
+        JPanel actionsRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actionsRight.setOpaque(false);
+        JTextField txtSearch = new JTextField(20);
+        txtSearch.putClientProperty("JTextField.placeholderText", "Tìm mã bàn, vị trí...");
+        styleField(txtSearch);
+        JButton btnRef = mkButton("Làm Mới", C_ACCENT);
+
+        actionsRight.add(txtSearch);
+        actionsRight.add(btnRef);
+        toolbar.add(btnAdd, BorderLayout.WEST);
+        toolbar.add(actionsRight, BorderLayout.EAST);
+
+        // Bảng dữ liệu
+        String[] cols = {"Mã Bàn", "Vị Trí (Khu vực)", "Trạng Thái", "Hành động"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+            public boolean isCellEditable(int r, int c) { return c == 3; }
+        };
+        JTable table = buildTable(model);
+
+        // Xử lý bộ lọc tìm kiếm (Sorter)
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
+        txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            private void search() {
+                String text = txtSearch.getText();
+                sorter.setRowFilter(text.trim().isEmpty() ? null : RowFilter.regexFilter("(?i)" + text));
+            }
+        });
+
+        // Thiết lập cột Hành động (Edit/Delete)
+        TableActionEvent event = new TableActionEvent() {
+            @Override
+            public void onEdit(int row) {
+                int modelRow = table.convertRowIndexToModel(row);
+                entity.Ban b = new entity.Ban();
+                b.setMaBan((String) model.getValueAt(modelRow, 0));
+                b.setViTri((String) model.getValueAt(modelRow, 1));
+                b.setTrangThai((String) model.getValueAt(modelRow, 2));
+                showTableFormDialog(b, model);
+            }
+
+            @Override
+            public void onDelete(int row) {
+                if (table.isEditing()) table.getCellEditor().stopCellEditing();
+                int modelRow = table.convertRowIndexToModel(row);
+                String ma = (String) model.getValueAt(modelRow, 0);
+                if (confirm("Bạn có chắc muốn xóa bàn [" + ma + "]?")) {
+                    try {
+                        Response res = client.sendRequest(new Request(CommandType.MANAGE_TABLE_DELETE, ma));
+                        if (res.isSuccess()) { info("Xóa bàn thành công!"); loadTableData(model); }
+                        else err(res.getMessage());
+                    } catch (Exception ex) { ex.printStackTrace(); }
+                }
+            }
+        };
+
+        table.getColumnModel().getColumn(3).setCellRenderer(new TableActionCellRenderer());
+        table.getColumnModel().getColumn(3).setCellEditor(new TableActionCellEditor(event));
+
+        btnAdd.addActionListener(e -> showTableFormDialog(null, model));
+        btnRef.addActionListener(e -> loadTableData(model));
+
+        body.add(toolbar, BorderLayout.NORTH);
+        body.add(styledScroll(table), BorderLayout.CENTER);
+
+        loadTableData(model);
+        page.add(body, BorderLayout.CENTER);
+        return page;
+    }
+    private void showTableFormDialog(entity.Ban existing, DefaultTableModel model) {
+        JDialog dlg = buildDialog(existing == null ? "Thêm Bàn Mới" : "Cập Nhật Bàn", 400, 300);
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(C_CARD_BG);
+        form.setBorder(new EmptyBorder(20, 25, 10, 25));
+        GridBagConstraints gbc = formGbc();
+
+        JTextField txtMa = styledField();
+        JTextField txtViTri = styledField();
+        JComboBox<String> cbStatus = styledCombo(new String[]{"Trống", "Có khách"});
+        if (existing != null) {
+            txtMa.setText(existing.getMaBan());
+            txtMa.setEditable(false); // Không cho sửa ID
+            txtViTri.setText(existing.getViTri());
+            cbStatus.setSelectedItem(existing.getTrangThai());
+        }
+        else {
+            // CHẾ ĐỘ THÊM: Tự động điền mã mới
+            txtMa.setText(generateNextTableId(model)); // Gọi hàm tự động tạo mã B0x
+            txtMa.setEditable(false);                  // Khóa lại không cho nhập đè
+            txtViTri.requestFocus();                   // Con trỏ chuột nhảy xuống ô Vị trí
+        }
+        addFormRow(form, gbc, 0, "Mã Bàn:", txtMa);
+        addFormRow(form, gbc, 1, "Vị Trí/Khu vực:", txtViTri);
+        addFormRow(form, gbc, 2, "Trạng Thái:", cbStatus);
+
+        JButton btnSave = mkButton("Lưu Dữ Liệu", C_ACCENT);
+        // Tìm đoạn này trong ManagerDashboard.java và thay thế:
+        btnSave.addActionListener(e -> {
+            if (txtMa.getText().trim().isEmpty() || txtViTri.getText().trim().isEmpty()) {
+                warn("Vui lòng không để trống thông tin!"); return;
+            }
+
+            // THAY ĐỔI Ở ĐÂY: Dùng setter thay vì builder
+            entity.Ban b = new entity.Ban();
+            b.setMaBan(txtMa.getText().trim());
+            b.setViTri(txtViTri.getText().trim());
+            b.setTrangThai(cbStatus.getSelectedItem().toString());
+
+            CommandType cmd = (existing == null) ? CommandType.MANAGE_TABLE_ADD : CommandType.MANAGE_TABLE_UPDATE;
+            try {
+                Response res = client.sendRequest(new Request(cmd, b));
+                if (res.isSuccess()) {
+                    info(res.getMessage()); // Hiển thị thông báo từ Server
+                    loadTableData(model);
+                    dlg.dispose();
+                } else {
+                    err(res.getMessage());
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                err("Lỗi kết nối Server!");
+            }
+        });
+
+        dlg.add(form, BorderLayout.CENTER);
+        dlg.add(wrapBtn(btnSave), BorderLayout.SOUTH);
+        dlg.setVisible(true);
+    }
+    private void loadTableData(DefaultTableModel model) {
+        model.setRowCount(0);
+        try {
+            Response res = client.sendRequest(new Request(CommandType.GET_TABLES, null));
+            if (res.isSuccess() && res.getData() != null) {
+                List<entity.Ban> list = (List<entity.Ban>) res.getData();
+                for (entity.Ban b : list) {
+                    model.addRow(new Object[]{
+                            b.getMaBan(),
+                            b.getViTri(),
+                            b.getTrangThai(),
+                            "" // Cột hành động
+                    });
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
     // ══════════════════════════════════════════════════════════
     // SIDEBAR
     // ══════════════════════════════════════════════════════════
@@ -392,8 +560,13 @@ public class ManagerDashboard extends JFrame {
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
                         List<entity.Ban> listBan = (List<entity.Ban>) resTables.getData();
-                        long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
-                        SwingUtilities.invokeLater(() -> ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables)));
+                        // Đảm bảo điều kiện filter là "Có khách" (viết hoa chữ C)
+                        long activeTables = listBan.stream()
+                                .filter(b -> "Có khách".equals(b.getTrangThai()))
+                                .count();
+                        SwingUtilities.invokeLater(() ->
+                                ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables))
+                        );
                     }
 
                     Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
@@ -1099,5 +1272,17 @@ public class ManagerDashboard extends JFrame {
     private void err(String msg)   { JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE); }
     private boolean confirm(String msg) {
         return JOptionPane.showConfirmDialog(this, msg, "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    }
+    private String generateNextTableId(DefaultTableModel model) {
+        int maxId = 0;
+        for (int i = 0; i < model.getRowCount(); i++) {
+            String maBan = (String) model.getValueAt(i, 0); // Ví dụ: "B05"
+            try {
+                int id = Integer.parseInt(maBan.substring(1));
+                if (id > maxId) maxId = id;
+            } catch (Exception e) {
+            }
+        }
+        return String.format("B%02d", maxId + 1);
     }
 }

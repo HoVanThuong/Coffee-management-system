@@ -284,6 +284,19 @@ public class ClientHandler implements Runnable {
                         emPw.close();
                     }
                     break;
+
+                case GENERATE_ID:
+                    String type = (String) req.getData();
+                    String generatedId = "";
+                    if ("HOA_DON".equals(type)) generatedId = util.IdGenerator.generateHoaDonId();
+                    else if ("CTHD".equals(type)) generatedId = util.IdGenerator.generateChiTietHoaDonId();
+                    else if ("NHAN_VIEN".equals(type)) generatedId = util.IdGenerator.generateNhanVienId();
+                    else if ("TAI_KHOAN".equals(type)) generatedId = util.IdGenerator.generateTaiKhoanId();
+                    else if ("DO_UONG".equals(type)) generatedId = util.IdGenerator.generateDoUongId();
+                    
+                    response.setSuccess(true);
+                    response.setData(generatedId);
+                    break;
             }
         } catch (Exception e) {
             e.printStackTrace();

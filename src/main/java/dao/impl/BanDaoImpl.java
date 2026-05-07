@@ -22,19 +22,17 @@ public class BanDaoImpl implements BanDao {
             em.close();
         }
     }
-
     @Override
     public boolean insert(Ban ban) {
         EntityManager em = JPAUtil.getEntityManager();
-        EntityTransaction tr = em.getTransaction();
         try {
-            tr.begin();
+            em.getTransaction().begin();
             em.persist(ban);
-            tr.commit();
+            em.getTransaction().commit();
             return true;
         } catch (Exception e) {
-            if (tr.isActive()) tr.rollback();
-            e.printStackTrace();
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            e.printStackTrace(); // Xem lỗi cụ thể ở Console Server
             return false;
         } finally {
             em.close();

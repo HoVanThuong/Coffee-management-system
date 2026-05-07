@@ -8,23 +8,26 @@ import java.time.format.DateTimeFormatter;
 public class IdGenerator {
 
     public static String generateHoaDonId() {
-        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMvvyy")).replace("vv", "0" + LocalDate.now().getMonthValue());
-        // Wait, simpler date format: ddMMyyyy
-        dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy"));
-        
+        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy"));
+
         EntityManager em = JPAUtil.getEntityManager();
         try {
             String query = "SELECT MAX(h.maHoaDon) FROM HoaDon h WHERE h.maHoaDon LIKE :prefix";
             String prefix = "HD" + dateStr;
             String maxId = em.createQuery(query, String.class)
-                             .setParameter("prefix", prefix + "%")
-                             .getSingleResult();
-            
+                    .setParameter("prefix", prefix + "%")
+                    .getSingleResult();
+
             int index = 1;
-            if (maxId != null && maxId.length() > 10) {
+            if (maxId != null && maxId.length() >= 10) {
                 try {
-                    index = Integer.parseInt(maxId.substring(10)) + 1;
-                } catch (Exception e) {}
+                    String numericPart = maxId.substring(10);
+                    if (!numericPart.isEmpty()) {
+                        index = Integer.parseInt(numericPart) + 1;
+                    }
+                } catch (Exception e) {
+                    index = 1;
+                }
             }
             return String.format("%s%03d", prefix, index);
         } finally {

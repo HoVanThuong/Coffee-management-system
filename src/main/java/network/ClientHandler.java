@@ -23,7 +23,7 @@ import java.util.UUID;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
-    
+
     private final HoaDonService hoaDonService = new HoaDonServiceImpl();
     private final BanService banService = new BanServiceImpl(new dao.impl.BanDaoImpl());
     private final DoUongService doUongService = new DoUongServiceImpl();
@@ -87,7 +87,36 @@ public class ClientHandler implements Runnable {
                     response.setSuccess(true);
                     response.setData(tables);
                     break;
-
+                case MANAGE_TABLE_ADD:
+                    try {
+                        Ban newTable = (Ban) req.getData();
+                        boolean addRes = banService.addBan(newTable);
+                        response.setSuccess(addRes);
+                        response.setMessage(addRes ? "Thêm bàn thành công" : "Mã bàn đã tồn tại hoặc lỗi dữ liệu");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        response.setSuccess(false);
+                        response.setMessage("Lỗi ép kiểu dữ liệu bàn!");
+                    }
+                    break;
+                case MANAGE_TABLE_UPDATE:
+                    try {
+                        Ban updTable = (Ban) req.getData();
+                        boolean updRes = banService.updateBan(updTable);
+                        response.setSuccess(updRes);
+                        response.setMessage(updRes ? "Cập nhật thành công" : "Không tìm thấy bàn để cập nhật");
+                    } catch (Exception e) {
+                        response.setSuccess(false);
+                        response.setMessage("Lỗi cập nhật: " + e.getMessage());
+                    }
+                    break;
+                case MANAGE_TABLE_DELETE:
+                    String idDel = (String) req.getData();
+                    // Gọi đúng hàm deleteBan
+                    boolean delRes = banService.deleteBan(idDel);
+                    response.setSuccess(delRes);
+                    response.setMessage(delRes ? "Xóa thành công" : "Xóa thất bại");
+                    break;
                 case GET_MENU:
                     List<DoUong> menu = doUongService.getAllDrinks();
                     response.setSuccess(true);
@@ -98,7 +127,7 @@ public class ClientHandler implements Runnable {
                     Object[] orderData = (Object[]) req.getData();
                     HoaDon phieu = (HoaDon) orderData[0];
                     List<ChiTietHoaDon> cart = (List<ChiTietHoaDon>) orderData[1];
-                    
+
                     boolean orderSuccess = hoaDonService.handleOrderFood(phieu, cart);
                     if (orderSuccess) {
                         response.setSuccess(true);
@@ -145,7 +174,7 @@ public class ClientHandler implements Runnable {
                     Object[] addEmpData = (Object[]) req.getData();
                     NhanVien newEmp = (NhanVien) addEmpData[0];
                     TaiKhoan newTk = (TaiKhoan) addEmpData[1];
-                    
+
                     boolean addEmpSuccess = nhanVienService.addEmployeeWithAccount(newEmp, newTk);
                     if (addEmpSuccess) {
                         response.setSuccess(true);
@@ -160,7 +189,7 @@ public class ClientHandler implements Runnable {
                     Object[] updateEmpData = (Object[]) req.getData();
                     NhanVien updatedEmp = (NhanVien) updateEmpData[0];
                     TaiKhoan updatedTk = (TaiKhoan) updateEmpData[1];
-                    
+
                     boolean updateEmpSuccess = nhanVienService.updateEmployeeWithAccount(updatedEmp, updatedTk);
                     if (updateEmpSuccess) {
                         response.setSuccess(true);
@@ -173,7 +202,7 @@ public class ClientHandler implements Runnable {
 
                 case MANAGE_EMPLOYEE_DELETE:
                     String maNhanVienToFire = (String) req.getData();
-                    
+
                     // We can just use terminateEmployee from service, but it doesn't disable account there.
                     // Wait, NhanVienService terminateEmployee needs to disable account?
                     // The old code disabled account by changing password to a UUID. 
@@ -293,7 +322,7 @@ public class ClientHandler implements Runnable {
                     else if ("NHAN_VIEN".equals(type)) generatedId = util.IdGenerator.generateNhanVienId();
                     else if ("TAI_KHOAN".equals(type)) generatedId = util.IdGenerator.generateTaiKhoanId();
                     else if ("DO_UONG".equals(type)) generatedId = util.IdGenerator.generateDoUongId();
-                    
+
                     response.setSuccess(true);
                     response.setData(generatedId);
                     break;

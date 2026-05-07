@@ -566,7 +566,12 @@ public class ManagerDashboard extends JFrame {
             txtGia.setText(existing.getGiaTien());
             cbLoai.setSelectedItem(existing.getLoaiDoUong());
         } else {
-            txtMa.setText("DU" + System.currentTimeMillis() % 10000);
+            // Fetch real ID from server
+            try {
+                Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "DO_UONG"));
+                if (res.isSuccess()) txtMa.setText((String) res.getData());
+                else txtMa.setText("DU" + System.currentTimeMillis() % 100000);
+            } catch (Exception ex) { txtMa.setText("DU" + System.currentTimeMillis() % 100000); }
         }
 
         addFormRow(form, gbc, 0, "Mã Đồ Uống",      txtMa);
@@ -791,7 +796,14 @@ public class ManagerDashboard extends JFrame {
             cbChucVu.setSelectedItem(nv.getChucVu());
             txtUser.setText(tk.getTenDangNhap()); chkMgr.setSelected(tk.isTaiKhoanQuanLi());
         } else {
-            txtMaNV.setText("NV" + System.currentTimeMillis() % 10000);
+            // Fetch real IDs from server
+            try {
+                Response resNV = client.sendRequest(new Request(CommandType.GENERATE_ID, "NHAN_VIEN"));
+                if (resNV.isSuccess()) txtMaNV.setText((String) resNV.getData());
+                
+                Response resTK = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
+                if (resTK.isSuccess()) txtUser.setText(((String) resTK.getData()).toLowerCase()); // Default username
+            } catch (Exception ex) { ex.printStackTrace(); }
         }
 
         addFormRow(form, gbc, 0, "Mã Nhân Viên",   txtMaNV);
@@ -809,7 +821,15 @@ public class ManagerDashboard extends JFrame {
             nv.setSdt(txtSdt.getText()); nv.setChucVu((String) cbChucVu.getSelectedItem());
             if (existingData == null) nv.setNgayVaoLam(LocalDate.now());
             TaiKhoan tk = new TaiKhoan();
-            tk.setMaTaiKhoan("TK_" + nv.getMaNhanVien());
+            if (existingData == null) {
+                try {
+                    Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
+                    if (res.isSuccess()) tk.setMaTaiKhoan((String) res.getData());
+                    else tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000);
+                } catch (Exception ex) { tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000); }
+            } else {
+                tk.setMaTaiKhoan(((TaiKhoan)existingData[1]).getMaTaiKhoan());
+            }
             tk.setTenDangNhap(txtUser.getText());
             tk.setMatKhau(new String(txtPass.getPassword()));
             tk.setTaiKhoanQuanLi(chkMgr.isSelected());

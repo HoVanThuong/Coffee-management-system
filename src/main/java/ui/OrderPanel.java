@@ -529,7 +529,12 @@ public class OrderPanel extends JPanel {
 
         if (activeOrder == null) {
             activeOrder = new HoaDon();
-            activeOrder.setMaHoaDon("HD" + System.currentTimeMillis());
+            // Fetch standardized ID from server
+            try {
+                Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "HOA_DON"));
+                if (res.isSuccess()) activeOrder.setMaHoaDon((String) res.getData());
+                else activeOrder.setMaHoaDon("HD_TEMP_" + System.currentTimeMillis());
+            } catch (Exception ex) { activeOrder.setMaHoaDon("HD_TEMP_" + System.currentTimeMillis()); }
             activeOrder.setBan(ban);
             activeOrder.setNhanVien(currentUser.getNhanVien());
             activeOrder.setTrangThai("Chưa thanh toán");

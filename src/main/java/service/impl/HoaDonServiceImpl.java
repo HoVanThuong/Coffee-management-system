@@ -88,6 +88,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                             em.merge(existingCt);
                         } else {
                             ct.setHoaDon(existingPhieu);
+                            ct.setId(util.IdGenerator.generateChiTietHoaDonId());
                             if (ct.getDoUong() != null) {
                                 entity.DoUong managedDoUong = em.find(entity.DoUong.class, ct.getDoUong().getMaDoUong());
                                 ct.setDoUong(managedDoUong);
@@ -102,11 +103,15 @@ public class HoaDonServiceImpl implements HoaDonService {
                 phieu.setBan(managedBan);
                 phieu.setNhanVien(managedNV);
                 phieu.setTrangThai(TRANG_THAI_CHUA_THANH_TOAN);
+                
+                // Generate standardized ID for new Invoice
+                phieu.setMaHoaDon(util.IdGenerator.generateHoaDonId());
 
                 em.persist(phieu); // Lưu hóa đơn trước
 
                 for (ChiTietHoaDon ct : cart) {
                     ct.setHoaDon(phieu);
+                    ct.setId(util.IdGenerator.generateChiTietHoaDonId());
                     if (ct.getDoUong() != null) {
                         ct.setDoUong(em.merge(ct.getDoUong()));
                     }

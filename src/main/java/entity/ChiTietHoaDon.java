@@ -30,8 +30,8 @@ public class ChiTietHoaDon implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "ma_chi_tiet")
+    private String id;
 
     @Column(name = "so_luong")
     private int soLuong;

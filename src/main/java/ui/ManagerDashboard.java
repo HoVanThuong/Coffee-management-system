@@ -412,13 +412,16 @@ public class ManagerDashboard extends JFrame {
                         
                         for (entity.HoaDon hd : listHD) {
                             if (hd.getNgayTao() != null) {
-                                if (hd.getNgayTao().equals(today)) {
+                                // Chỉ tính các hóa đơn Đã thanh toán vào doanh thu
+                                boolean isPaid = "Đã thanh toán".equals(hd.getTrangThai());
+                                
+                                if (hd.getNgayTao().equals(today) && isPaid) {
                                     count++;
                                     rev += hd.getTongTien();
                                 }
                                 
                                 String dateStr = hd.getNgayTao().format(fmt);
-                                if (chartData.containsKey(dateStr)) {
+                                if (chartData.containsKey(dateStr) && isPaid) {
                                     chartData.put(dateStr, chartData.get(dateStr) + hd.getTongTien());
                                 }
                             }

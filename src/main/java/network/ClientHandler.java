@@ -1,25 +1,13 @@
 package network;
 
-import entity.*;
-import service.BanService;
-import service.DoUongService;
-import service.HoaDonService;
-import service.NhanVienService;
-import service.impl.BanServiceImpl;
-import service.impl.DoUongServiceImpl;
-import service.impl.HoaDonServiceImpl;
-import service.impl.NhanVienServiceImpl;
-import db.JPAUtil;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
-
+import dto.*;
+import mapper.Mapper;
+import service.*;
+import service.impl.*;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
@@ -28,6 +16,7 @@ public class ClientHandler implements Runnable {
     private final BanService banService = new BanServiceImpl(new dao.impl.BanDaoImpl());
     private final DoUongService doUongService = new DoUongServiceImpl();
     private final NhanVienService nhanVienService = new NhanVienServiceImpl();
+    private final TaiKhoanService taiKhoanService = new TaiKhoanServiceImpl();
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -56,91 +45,91 @@ public class ClientHandler implements Runnable {
         try {
             switch (req.getCommandType()) {
                 case LOGIN:
-                    // LOGIN doesn't have a dedicated service, so we use EntityManager locally for now.
-                    EntityManager em = JPAUtil.getEntityManager();
                     try {
-                        TaiKhoan inputTk = (TaiKhoan) req.getData();
-                        TypedQuery<TaiKhoan> query = em.createQuery("SELECT t FROM TaiKhoan t JOIN FETCH t.nhanVien WHERE t.tenDangNhap = :username", TaiKhoan.class);
-                        query.setParameter("username", inputTk.getTenDangNhap());
-                        TaiKhoan dbTk = query.getSingleResult();
-
-                        if (dbTk.getNhanVien() != null && dbTk.getNhanVien().getNgayThoiViec() != null) {
-                            response.setSuccess(false);
-                            response.setMessage("Tài khoản này đã bị vô hiệu hóa!");
-                        } else if (dbTk.getMatKhau().equals(inputTk.getMatKhau())) {
+                        TaiKhoanDTO loginDto = Mapper.map(req.getData(), TaiKhoanDTO.class);
+                        System.out.println("Server: Processing login for: " + loginDto.getTenDangNhap());
+                        TaiKhoanDTO result = taiKhoanService.login(loginDto.getTenDangNhap(), loginDto.getMatKhau());
+                        
+                        if (result != null) {
+                            System.out.println("Server: Login success for " + loginDto.getTenDangNhap());
                             response.setSuccess(true);
-                            response.setData(dbTk);
+                            response.setData(result);
                         } else {
+                            System.out.println("Server: Login failed for " + loginDto.getTenDangNhap());
                             response.setSuccess(false);
-                            response.setMessage("Sai mật khẩu!");
+                            response.setMessage("Sai tên đăng nhập hoặc mật khẩu, hoặc tài khoản đã bị vô hiệu hóa!");
                         }
-                    } catch (NoResultException e) {
+                    } catch (Exception e) {
+                        e.printStackTrace();
                         response.setSuccess(false);
-                        response.setMessage("Tài khoản không tồn tại!");
-                    } finally {
-                        em.close();
+                        response.setMessage("Lỗi đăng nhập: " + e.getMessage());
                     }
                     break;
 
                 case GET_TABLES:
-                    List<Ban> tables = banService.findAll();
+                    response.setData(banService.findAll());
                     response.setSuccess(true);
-                    response.setData(tables);
                     break;
+
                 case MANAGE_TABLE_ADD:
                     try {
-                        Ban newTable = (Ban) req.getData();
-                        boolean addRes = banService.addBan(newTable);
-                        response.setSuccess(addRes);
-                        response.setMessage(addRes ? "Thêm bàn thành công" : "Mã bàn đã tồn tại hoặc lỗi dữ liệu");
+                        BanDTO tableDto = Mapper.map(req.getData(), BanDTO.class);
+                        boolean added = banService.addBan(tableDto);
+                        response.setSuccess(added);
+                        response.setMessage(added ? "Thêm bàn thành công!" : "Bàn đã tồn tại!");
                     } catch (Exception e) {
-                        e.printStackTrace();
                         response.setSuccess(false);
-                        response.setMessage("Lỗi ép kiểu dữ liệu bàn!");
+                        response.setMessage("Lỗi Server: " + e.getMessage());
                     }
                     break;
+
                 case MANAGE_TABLE_UPDATE:
                     try {
-                        Ban updTable = (Ban) req.getData();
-                        boolean updRes = banService.updateBan(updTable);
-                        response.setSuccess(updRes);
-                        response.setMessage(updRes ? "Cập nhật thành công" : "Không tìm thấy bàn để cập nhật");
+                        BanDTO tableDto = Mapper.map(req.getData(), BanDTO.class);
+                        boolean updated = banService.updateBan(tableDto);
+                        response.setSuccess(updated);
+                        response.setMessage(updated ? "Cập nhật thành công!" : "Lỗi cập nhật!");
                     } catch (Exception e) {
                         response.setSuccess(false);
-                        response.setMessage("Lỗi cập nhật: " + e.getMessage());
+                        response.setMessage("Lỗi Server: " + e.getMessage());
                     }
                     break;
+
                 case MANAGE_TABLE_DELETE:
-                    String idDel = (String) req.getData();
-                    // Gọi đúng hàm deleteBan
+                    String idDel = Mapper.map(req.getData(), String.class);
                     boolean delRes = banService.deleteBan(idDel);
                     response.setSuccess(delRes);
                     response.setMessage(delRes ? "Xóa thành công" : "Xóa thất bại");
                     break;
+
                 case GET_MENU:
-                    List<DoUong> menu = doUongService.getAllDrinks();
+                    response.setData(doUongService.getAllDrinks());
                     response.setSuccess(true);
-                    response.setData(menu);
                     break;
 
                 case ORDER_FOOD:
-                    Object[] orderData = (Object[]) req.getData();
-                    HoaDon phieu = (HoaDon) orderData[0];
-                    List<ChiTietHoaDon> cart = (List<ChiTietHoaDon>) orderData[1];
+                    try {
+                        Object[] orderData = (Object[]) req.getData();
+                        HoaDonDTO phieuDto = Mapper.map(orderData[0], HoaDonDTO.class);
+                        @SuppressWarnings("unchecked")
+                        List<Object> cartData = (List<Object>) orderData[1];
+                        List<ChiTietHoaDonDTO> cartDto = cartData.stream()
+                                .map(c -> Mapper.map(c, ChiTietHoaDonDTO.class))
+                                .toList();
 
-                    boolean orderSuccess = hoaDonService.handleOrderFood(phieu, cart);
-                    if (orderSuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Cập nhật hóa đơn thành công!");
-                    } else {
+                        boolean orderSuccess = hoaDonService.handleOrderFood(phieuDto, cartDto);
+                        response.setSuccess(orderSuccess);
+                        response.setMessage(orderSuccess ? "Cập nhật hóa đơn thành công!" : "Lỗi cập nhật hóa đơn!");
+                    } catch (Exception e) {
+                        e.printStackTrace();
                         response.setSuccess(false);
-                        response.setMessage("Lỗi cập nhật hóa đơn!");
+                        response.setMessage("Lỗi Order: " + e.getMessage());
                     }
                     break;
 
                 case GET_ORDER:
-                    String maBan = (String) req.getData();
-                    HoaDon activeOrder = hoaDonService.getActiveOrderForTable(maBan);
+                    String maBan = Mapper.map(req.getData(), String.class);
+                    HoaDonDTO activeOrder = hoaDonService.getActiveOrderForTable(maBan);
                     if (activeOrder != null) {
                         response.setSuccess(true);
                         response.setData(activeOrder);
@@ -151,171 +140,112 @@ public class ClientHandler implements Runnable {
                     break;
 
                 case PAY_BILL:
-                    HoaDon hoaDon = (HoaDon) req.getData();
-                    boolean paySuccess = hoaDonService.handlePayment(hoaDon);
-                    if (paySuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Thanh toán thành công!");
-                    } else {
+                    try {
+                        HoaDonDTO hoaDonDto = Mapper.map(req.getData(), HoaDonDTO.class);
+                        boolean paySuccess = hoaDonService.handlePayment(hoaDonDto);
+                        response.setSuccess(paySuccess);
+                        response.setMessage(paySuccess ? "Thanh toán thành công!" : "Lỗi thanh toán!");
+                    } catch (Exception e) {
                         response.setSuccess(false);
-                        response.setMessage("Lỗi thanh toán!");
+                        response.setMessage("Lỗi thanh toán: " + e.getMessage());
                     }
                     break;
 
-                // Employee Management Cases
                 case GET_EMPLOYEES:
-                    boolean includeFired = req.getData() != null && (Boolean) req.getData();
-                    List<NhanVien> employees = nhanVienService.getAllEmployees(includeFired);
+                    boolean includeFired = req.getData() != null && Mapper.map(req.getData(), Boolean.class);
+                    response.setData(nhanVienService.getAllEmployees(includeFired));
                     response.setSuccess(true);
-                    response.setData(employees);
                     break;
 
                 case MANAGE_EMPLOYEE_ADD:
-                    Object[] addEmpData = (Object[]) req.getData();
-                    NhanVien newEmp = (NhanVien) addEmpData[0];
-                    TaiKhoan newTk = (TaiKhoan) addEmpData[1];
-
-                    boolean addEmpSuccess = nhanVienService.addEmployeeWithAccount(newEmp, newTk);
-                    if (addEmpSuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Thêm nhân viên thành công!");
-                    } else {
+                    try {
+                        Object[] data = (Object[]) req.getData();
+                        NhanVienDTO nvDto = Mapper.map(data[0], NhanVienDTO.class);
+                        TaiKhoanDTO tkDto = Mapper.map(data[1], TaiKhoanDTO.class);
+                        boolean ok = nhanVienService.addEmployeeWithAccount(nvDto, tkDto);
+                        response.setSuccess(ok);
+                        response.setMessage(ok ? "Thêm thành công!" : "Mã NV hoặc Username bị trùng!");
+                    } catch (Exception e) {
                         response.setSuccess(false);
-                        response.setMessage("Thêm nhân viên thất bại!");
+                        response.setMessage("Lỗi Server: " + e.getMessage());
                     }
                     break;
 
                 case MANAGE_EMPLOYEE_UPDATE:
-                    Object[] updateEmpData = (Object[]) req.getData();
-                    NhanVien updatedEmp = (NhanVien) updateEmpData[0];
-                    TaiKhoan updatedTk = (TaiKhoan) updateEmpData[1];
-
-                    boolean updateEmpSuccess = nhanVienService.updateEmployeeWithAccount(updatedEmp, updatedTk);
-                    if (updateEmpSuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Cập nhật nhân viên thành công!");
-                    } else {
+                    try {
+                        Object[] data = (Object[]) req.getData();
+                        NhanVienDTO nvDto = Mapper.map(data[0], NhanVienDTO.class);
+                        TaiKhoanDTO tkDto = Mapper.map(data[1], TaiKhoanDTO.class);
+                        boolean ok = nhanVienService.updateEmployeeWithAccount(nvDto, tkDto);
+                        response.setSuccess(ok);
+                        response.setMessage(ok ? "Cập nhật thành công!" : "Lỗi cập nhật!");
+                    } catch (Exception e) {
                         response.setSuccess(false);
-                        response.setMessage("Cập nhật nhân viên thất bại!");
+                        response.setMessage("Lỗi Server: " + e.getMessage());
                     }
                     break;
 
                 case MANAGE_EMPLOYEE_DELETE:
-                    String maNhanVienToFire = (String) req.getData();
-
-                    // We can just use terminateEmployee from service, but it doesn't disable account there.
-                    // Wait, NhanVienService terminateEmployee needs to disable account?
-                    // The old code disabled account by changing password to a UUID. 
-                    // Let's implement that in DAO or here. For now, doing it here with EM is faster, or we update the Service.
-                    // Let's update Service later, for now just use EM here to match old behavior.
-                    EntityManager emDelete = JPAUtil.getEntityManager();
-                    emDelete.getTransaction().begin();
-                    try {
-                        NhanVien empToFire = emDelete.find(NhanVien.class, maNhanVienToFire);
-                        if (empToFire != null) {
-                            empToFire.setNgayThoiViec(LocalDate.now());
-
-                            TypedQuery<TaiKhoan> queryTk = emDelete.createQuery("SELECT t FROM TaiKhoan t WHERE t.nhanVien.maNhanVien = :maNhanVien", TaiKhoan.class);
-                            queryTk.setParameter("maNhanVien", empToFire.getMaNhanVien());
-                            try {
-                                TaiKhoan tkToDisable = queryTk.getSingleResult();
-                                tkToDisable.setMatKhau(UUID.randomUUID().toString());
-                                emDelete.merge(tkToDisable);
-                            } catch (NoResultException e) {
-                            }
-                            emDelete.merge(empToFire);
-                            response.setSuccess(true);
-                            response.setMessage("Đã cho nhân viên thôi việc và vô hiệu hóa tài khoản!");
-                        } else {
-                            response.setSuccess(false);
-                            response.setMessage("Không tìm thấy nhân viên!");
-                        }
-                        emDelete.getTransaction().commit();
-                    } catch (Exception e) {
-                        if (emDelete.getTransaction().isActive()) emDelete.getTransaction().rollback();
-                        response.setSuccess(false);
-                        response.setMessage("Lỗi xóa nhân viên");
-                    } finally {
-                        emDelete.close();
-                    }
+                    String maNhanVienToFire = Mapper.map(req.getData(), String.class);
+                    boolean fireOk = nhanVienService.terminateEmployee(maNhanVienToFire);
+                    response.setSuccess(fireOk);
+                    response.setMessage(fireOk ? "Đã cho nhân viên thôi việc và vô hiệu hóa tài khoản!" : "Lỗi khi xử lý thôi việc!");
                     break;
 
                 case MANAGE_MENU_ADD:
-                    DoUong newDoUong = (DoUong) req.getData();
-                    boolean addMenuSuccess = doUongService.addDrink(newDoUong);
-                    if (addMenuSuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Thêm món thành công!");
-                    } else {
+                    try {
+                        DoUongDTO dDto = Mapper.map(req.getData(), DoUongDTO.class);
+                        boolean ok = doUongService.addDrink(dDto);
+                        response.setSuccess(ok);
+                        response.setMessage(ok ? "Thêm món thành công!" : "Mã món đã tồn tại!");
+                    } catch (Exception e) {
                         response.setSuccess(false);
-                        response.setMessage("Thêm món thất bại!");
+                        response.setMessage(e.getMessage());
                     }
                     break;
 
                 case MANAGE_MENU_UPDATE:
-                    DoUong updatedDoUong = (DoUong) req.getData();
-                    boolean updateMenuSuccess = doUongService.updateDrink(updatedDoUong);
-                    if (updateMenuSuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Cập nhật món thành công!");
-                    } else {
+                    try {
+                        DoUongDTO dDto = Mapper.map(req.getData(), DoUongDTO.class);
+                        boolean ok = doUongService.updateDrink(dDto);
+                        response.setSuccess(ok);
+                        response.setMessage(ok ? "Cập nhật thành công!" : "Lỗi!");
+                    } catch (Exception e) {
                         response.setSuccess(false);
-                        response.setMessage("Cập nhật món thất bại!");
+                        response.setMessage(e.getMessage());
                     }
                     break;
 
                 case MANAGE_MENU_DELETE:
-                    String maMonToDelete = (String) req.getData();
+                    String maMonToDelete = Mapper.map(req.getData(), String.class);
                     boolean delMenuSuccess = doUongService.deleteDrink(maMonToDelete);
-                    if (delMenuSuccess) {
-                        response.setSuccess(true);
-                        response.setMessage("Xóa món thành công!");
-                    } else {
-                        response.setSuccess(false);
-                        response.setMessage("Xóa món thất bại!");
-                    }
+                    response.setSuccess(delMenuSuccess);
+                    response.setMessage(delMenuSuccess ? "Xóa món thành công!" : "Xóa món thất bại!");
                     break;
 
                 case GET_INVOICES:
-                    List<HoaDon> invoices = hoaDonService.getAllInvoices();
+                    response.setData(hoaDonService.getAllInvoices());
                     response.setSuccess(true);
-                    response.setData(invoices);
                     break;
 
                 case CHANGE_PASSWORD:
-                    Object[] pwData = (Object[]) req.getData();
-                    String maTaiKhoan = (String) pwData[0];
-                    String oldPw = (String) pwData[1];
-                    String newPw = (String) pwData[2];
-
-                    EntityManager emPw = JPAUtil.getEntityManager();
-                    emPw.getTransaction().begin();
                     try {
-                        TaiKhoan tk = emPw.find(TaiKhoan.class, maTaiKhoan);
-                        if (tk == null) {
-                            response.setSuccess(false);
-                            response.setMessage("Tài khoản không tồn tại!");
-                        } else if (!tk.getMatKhau().equals(oldPw)) {
-                            response.setSuccess(false);
-                            response.setMessage("Mật khẩu cũ không đúng!");
-                        } else {
-                            tk.setMatKhau(newPw);
-                            emPw.merge(tk);
-                            response.setSuccess(true);
-                            response.setMessage("Đổi mật khẩu thành công!");
-                        }
-                        emPw.getTransaction().commit();
+                        Object[] pwData = (Object[]) req.getData();
+                        String maTK = Mapper.map(pwData[0], String.class);
+                        String oldPw = Mapper.map(pwData[1], String.class);
+                        String newPw = Mapper.map(pwData[2], String.class);
+
+                        boolean changeOk = taiKhoanService.changePassword(maTK, oldPw, newPw);
+                        response.setSuccess(changeOk);
+                        response.setMessage(changeOk ? "Đổi mật khẩu thành công!" : "Mật khẩu cũ không đúng hoặc tài khoản không tồn tại!");
                     } catch (Exception e) {
-                        if (emPw.getTransaction().isActive()) emPw.getTransaction().rollback();
                         response.setSuccess(false);
-                        response.setMessage("Lỗi đổi mật khẩu: " + e.getMessage());
-                    } finally {
-                        emPw.close();
+                        response.setMessage("Lỗi Server: " + e.getMessage());
                     }
                     break;
 
                 case GENERATE_ID:
-                    String type = (String) req.getData();
+                    String type = Mapper.map(req.getData(), String.class);
                     String generatedId = "";
                     if ("HOA_DON".equals(type)) generatedId = util.IdGenerator.generateHoaDonId();
                     else if ("CTHD".equals(type)) generatedId = util.IdGenerator.generateChiTietHoaDonId();

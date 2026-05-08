@@ -1,13 +1,13 @@
 package service;
 
-import entity.Ban;
+import dto.BanDTO;
 import java.util.List;
 
 public interface BanService {
-    List<Ban> findAll();
-    Ban findById(String maBan);
+    List<BanDTO> findAll();
+    BanDTO findById(String maBan);
     boolean updateStatus(String maBan, String status);
-    boolean addBan(Ban ban);
-    boolean updateBan(Ban ban);
+    boolean addBan(BanDTO banDto);
+    boolean updateBan(BanDTO banDto);
     boolean deleteBan(String maBan);
 }

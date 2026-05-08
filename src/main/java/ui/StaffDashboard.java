@@ -1,7 +1,6 @@
 package ui;
 
-import entity.Ban;
-import entity.TaiKhoan;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 public class StaffDashboard extends JFrame {
 
     private final Client client;
-    private final TaiKhoan currentUser;
+    private final TaiKhoanDTO currentUser;
 
     private CardLayout cardLayout;
     private JPanel mainContentPanel;
@@ -51,7 +50,7 @@ public class StaffDashboard extends JFrame {
     private static final Font F_LABEL   = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Font F_BRAND   = new Font("Segoe UI", Font.BOLD, 16);
 
-    public StaffDashboard(Client client, TaiKhoan currentUser) {
+    public StaffDashboard(Client client, TaiKhoanDTO currentUser) {
         this.client = client;
         this.currentUser = currentUser;
 
@@ -254,14 +253,16 @@ public class StaffDashboard extends JFrame {
                 try {
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
-                        List<entity.Ban> listBan = (List<entity.Ban>) resTables.getData();
+                        @SuppressWarnings("unchecked")
+                        List<BanDTO> listBan = (List<BanDTO>) resTables.getData();
                         long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
                         SwingUtilities.invokeLater(() -> ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables)));
                     }
 
                     Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
                     if (resInvoices.isSuccess() && resInvoices.getData() != null) {
-                        List<entity.HoaDon> listHD = (List<entity.HoaDon>) resInvoices.getData();
+                        @SuppressWarnings("unchecked")
+                        List<HoaDonDTO> listHD = (List<HoaDonDTO>) resInvoices.getData();
                         LocalDate today = LocalDate.now();
                         long count = 0;
                         double rev = 0;
@@ -273,7 +274,7 @@ public class StaffDashboard extends JFrame {
                             chartData.put(today.minusDays(i).format(fmt), 0.0);
                         }
                         
-                        for (entity.HoaDon hd : listHD) {
+                        for (HoaDonDTO hd : listHD) {
                             if (hd.getNgayTao() != null) {
                                 // Chỉ tính các hóa đơn Đã thanh toán vào doanh thu
                                 boolean isPaid = "Đã thanh toán".equals(hd.getTrangThai());
@@ -364,7 +365,8 @@ public class StaffDashboard extends JFrame {
                 try {
                     Response res = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (res.isSuccess() && res.getData() != null) {
-                        List<Ban> listBan = (List<Ban>) res.getData();
+                        @SuppressWarnings("unchecked")
+                        List<BanDTO> listBan = (List<BanDTO>) res.getData();
                         SwingUtilities.invokeLater(() -> updateTabbedPane(listBan));
                     }
                 } catch (Exception ex) { ex.printStackTrace(); }
@@ -373,28 +375,28 @@ public class StaffDashboard extends JFrame {
         }.execute();
     }
 
-    private void updateTabbedPane(List<Ban> listBan) {
+    private void updateTabbedPane(List<BanDTO> listBan) {
         if (tableTabs == null) return;
         int prevSelected = tableTabs.getSelectedIndex();
         tableTabs.removeAll();
 
         // Nhóm theo vi_tri, giữ thứ tự xuất hiện
-        Map<String, List<Ban>> grouped = listBan.stream()
+        Map<String, List<BanDTO>> grouped = listBan.stream()
             .collect(Collectors.groupingBy(
                 b -> (b.getViTri() != null && !b.getViTri().isBlank()) ? b.getViTri() : "Khác",
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
 
-        for (Map.Entry<String, List<Ban>> entry : grouped.entrySet()) {
+        for (Map.Entry<String, List<BanDTO>> entry : grouped.entrySet()) {
             String zone = entry.getKey();
-            List<Ban> zoneBans = entry.getValue();
+            List<BanDTO> zoneBans = entry.getValue();
 
             JPanel tabPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 16, 16));
             tabPanel.setBackground(C_PAGE_BG);
             tabPanel.setBorder(new EmptyBorder(20, 28, 20, 28));
 
-            for (Ban b : zoneBans) {
+            for (BanDTO b : zoneBans) {
                 tabPanel.add(createTableCard(b));
             }
 
@@ -423,7 +425,7 @@ public class StaffDashboard extends JFrame {
         tableTabs.repaint();
     }
 
-    private JPanel createTableCard(Ban ban) {
+    private JPanel createTableCard(BanDTO ban) {
         boolean isOccupied = "Có khách".equals(ban.getTrangThai());
 
         JPanel card = new JPanel(new BorderLayout(0, 8));
@@ -474,7 +476,7 @@ public class StaffDashboard extends JFrame {
         return card;
     }
 
-    private void openOrder(Ban ban) {
+    private void openOrder(BanDTO ban) {
         OrderPanel orderPanel = new OrderPanel(client, currentUser, ban, this);
         mainContentPanel.add(orderPanel, "ORDER_VIEW");
         cardLayout.show(mainContentPanel, "ORDER_VIEW");

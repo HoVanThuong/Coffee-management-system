@@ -1,9 +1,6 @@
 package ui;
 
-import entity.DoUong;
-import entity.HoaDon;
-import entity.NhanVien;
-import entity.TaiKhoan;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -26,52 +23,52 @@ import ui.components.SettingsPanel;
 public class ManagerDashboard extends JFrame {
 
     private Client client;
-    private TaiKhoan taiKhoan;
+    private TaiKhoanDTO taiKhoan;
 
     private CardLayout cardLayout;
     private JPanel mainContentPanel;
     private JButton activeNavButton = null;
-    private List<HoaDon> currentInvoices;
+    private List<HoaDonDTO> currentInvoices;
 
     // ── Palette ──────────────────────────────────────────────
-    private static final Color C_SIDEBAR_BG   = new Color(15,  17,  23);   // near-black
-    private static final Color C_SIDEBAR_SEC  = new Color(22,  26,  35);   // panel header
-    private static final Color C_NAV_HOVER    = new Color(30,  35,  48);
-    private static final Color C_NAV_ACTIVE   = new Color(99, 179, 237);   // sky-blue accent
-    private static final Color C_ACCENT       = new Color(99, 179, 237);
-    private static final Color C_ACCENT_DARK  = new Color(66, 153, 225);
-    private static final Color C_SUCCESS      = new Color(72, 187, 120);
-    private static final Color C_WARNING      = new Color(237, 169, 38);
-    private static final Color C_DANGER       = new Color(245, 101,  96);
-    private static final Color C_PAGE_BG      = new Color(246, 248, 252);
-    private static final Color C_CARD_BG      = Color.WHITE;
-    private static final Color C_TEXT_PRIMARY = new Color(26,  32,  44);
-    private static final Color C_TEXT_MUTED   = new Color(113, 128, 150);
-    private static final Color C_BORDER       = new Color(226, 232, 240);
-    private static final Color C_TH_BG        = new Color(247, 250, 252);
-    private static final Color C_TR_STRIPE    = new Color(252, 253, 255);
+    private static final Color C_SIDEBAR_BG = new Color(15, 17, 23); // near-black
+    private static final Color C_SIDEBAR_SEC = new Color(22, 26, 35); // panel header
+    private static final Color C_NAV_HOVER = new Color(30, 35, 48);
+    private static final Color C_NAV_ACTIVE = new Color(99, 179, 237); // sky-blue accent
+    private static final Color C_ACCENT = new Color(99, 179, 237);
+    private static final Color C_ACCENT_DARK = new Color(66, 153, 225);
+    private static final Color C_SUCCESS = new Color(72, 187, 120);
+    private static final Color C_WARNING = new Color(237, 169, 38);
+    private static final Color C_DANGER = new Color(245, 101, 96);
+    private static final Color C_PAGE_BG = new Color(246, 248, 252);
+    private static final Color C_CARD_BG = Color.WHITE;
+    private static final Color C_TEXT_PRIMARY = new Color(26, 32, 44);
+    private static final Color C_TEXT_MUTED = new Color(113, 128, 150);
+    private static final Color C_BORDER = new Color(226, 232, 240);
+    private static final Color C_TH_BG = new Color(247, 250, 252);
+    private static final Color C_TR_STRIPE = new Color(252, 253, 255);
 
     // ── Fonts ────────────────────────────────────────────────
-    private static final Font F_TITLE   = new Font("Segoe UI",        Font.BOLD,  26);
-    private static final Font F_SECTION = new Font("Segoe UI",        Font.BOLD,  13);
-    private static final Font F_NAV     = new Font("Segoe UI Semibold",Font.PLAIN, 14);
-    private static final Font F_BODY    = new Font("Segoe UI",        Font.PLAIN, 13);
-    private static final Font F_LABEL   = new Font("Segoe UI",        Font.PLAIN, 12);
-    private static final Font F_BADGE   = new Font("Segoe UI",        Font.BOLD,  11);
-    private static final Font F_BRAND   = new Font("Segoe UI",        Font.BOLD,  16);
+    private static final Font F_TITLE = new Font("Segoe UI", Font.BOLD, 26);
+    private static final Font F_SECTION = new Font("Segoe UI", Font.BOLD, 13);
+    private static final Font F_NAV = new Font("Segoe UI Semibold", Font.PLAIN, 14);
+    private static final Font F_BODY = new Font("Segoe UI", Font.PLAIN, 13);
+    private static final Font F_LABEL = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font F_BADGE = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font F_BRAND = new Font("Segoe UI", Font.BOLD, 16);
 
     // ── Nav items ─────────────────────────────────────────────
     private static final String[][] NAV_ITEMS = {
-            { "Thống Kê",   "DASHBOARD" },
+            { "Dash Board", "DASHBOARD" },
             { "Bàn", "TABLES" },
-            { "Thực Đơn",    "MENU" },
-            { "Nhân Viên",  "STAFF" },
-            { "Hóa Đơn",    "INVOICES" },
-            { "Cài Đặt",    "SETTINGS" },
+            { "Thực Đơn", "MENU" },
+            { "Nhân Viên", "STAFF" },
+            { "Hóa Đơn", "INVOICES" },
+            { "Cài Đặt", "SETTINGS" },
     };
 
-    public ManagerDashboard(Client client, TaiKhoan taiKhoan) {
-        this.client   = client;
+    public ManagerDashboard(Client client, TaiKhoanDTO taiKhoan) {
+        this.client = client;
         this.taiKhoan = taiKhoan;
 
         setTitle("Coffee Manager");
@@ -84,17 +81,18 @@ public class ManagerDashboard extends JFrame {
 
         add(buildSidebar(), BorderLayout.WEST);
 
-        cardLayout       = new CardLayout();
+        cardLayout = new CardLayout();
         mainContentPanel = new JPanel(cardLayout);
         mainContentPanel.setBackground(C_PAGE_BG);
-        mainContentPanel.add(createDashboardPanel(),          "DASHBOARD");
-        mainContentPanel.add(createTableManagementPanel(),    "TABLES"); // THÊM DÒNG NÀY
-        mainContentPanel.add(createMenuManagementPanel(),     "MENU");
+        mainContentPanel.add(createDashboardPanel(), "DASHBOARD");
+        mainContentPanel.add(createTableManagementPanel(), "TABLES"); // THÊM DÒNG NÀY
+        mainContentPanel.add(createMenuManagementPanel(), "MENU");
         mainContentPanel.add(createEmployeeManagementPanel(), "STAFF");
-        mainContentPanel.add(createInvoiceManagementPanel(),  "INVOICES");
+        mainContentPanel.add(createInvoiceManagementPanel(), "INVOICES");
         mainContentPanel.add(new SettingsPanel(client, taiKhoan), "SETTINGS");
         add(mainContentPanel, BorderLayout.CENTER);
     }
+
     // ══════════════════════════════════════════════════════════
     // QUẢN LÝ BÀN
     // ══════════════════════════════════════════════════════════
@@ -125,9 +123,11 @@ public class ManagerDashboard extends JFrame {
         toolbar.add(actionsRight, BorderLayout.EAST);
 
         // Bảng dữ liệu
-        String[] cols = {"Mã Bàn", "Vị Trí (Khu vực)", "Trạng Thái", "Hành động"};
+        String[] cols = { "Mã Bàn", "Vị Trí (Khu vực)", "Trạng Thái", "Hành động" };
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return c == 3; }
+            public boolean isCellEditable(int r, int c) {
+                return c == 3;
+            }
         };
         JTable table = buildTable(model);
 
@@ -135,9 +135,18 @@ public class ManagerDashboard extends JFrame {
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
             private void search() {
                 String text = txtSearch.getText();
                 sorter.setRowFilter(text.trim().isEmpty() ? null : RowFilter.regexFilter("(?i)" + text));
@@ -149,7 +158,7 @@ public class ManagerDashboard extends JFrame {
             @Override
             public void onEdit(int row) {
                 int modelRow = table.convertRowIndexToModel(row);
-                entity.Ban b = new entity.Ban();
+                BanDTO b = new BanDTO();
                 b.setMaBan((String) model.getValueAt(modelRow, 0));
                 b.setViTri((String) model.getValueAt(modelRow, 1));
                 b.setTrangThai((String) model.getValueAt(modelRow, 2));
@@ -158,15 +167,21 @@ public class ManagerDashboard extends JFrame {
 
             @Override
             public void onDelete(int row) {
-                if (table.isEditing()) table.getCellEditor().stopCellEditing();
+                if (table.isEditing())
+                    table.getCellEditor().stopCellEditing();
                 int modelRow = table.convertRowIndexToModel(row);
                 String ma = (String) model.getValueAt(modelRow, 0);
                 if (confirm("Bạn có chắc muốn xóa bàn [" + ma + "]?")) {
                     try {
                         Response res = client.sendRequest(new Request(CommandType.MANAGE_TABLE_DELETE, ma));
-                        if (res.isSuccess()) { info("Xóa bàn thành công!"); loadTableData(model); }
-                        else err(res.getMessage());
-                    } catch (Exception ex) { ex.printStackTrace(); }
+                        if (res.isSuccess()) {
+                            info("Xóa bàn thành công!");
+                            loadTableData(model);
+                        } else
+                            err(res.getMessage());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         };
@@ -184,7 +199,8 @@ public class ManagerDashboard extends JFrame {
         page.add(body, BorderLayout.CENTER);
         return page;
     }
-    private void showTableFormDialog(entity.Ban existing, DefaultTableModel model) {
+
+    private void showTableFormDialog(BanDTO existing, DefaultTableModel model) {
         JDialog dlg = buildDialog(existing == null ? "Thêm Bàn Mới" : "Cập Nhật Bàn", 400, 300);
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(C_CARD_BG);
@@ -193,18 +209,17 @@ public class ManagerDashboard extends JFrame {
 
         JTextField txtMa = styledField();
         JTextField txtViTri = styledField();
-        JComboBox<String> cbStatus = styledCombo(new String[]{"Trống", "Có khách"});
+        JComboBox<String> cbStatus = styledCombo(new String[] { "Trống", "Có khách" });
         if (existing != null) {
             txtMa.setText(existing.getMaBan());
             txtMa.setEditable(false); // Không cho sửa ID
             txtViTri.setText(existing.getViTri());
             cbStatus.setSelectedItem(existing.getTrangThai());
-        }
-        else {
+        } else {
             // CHẾ ĐỘ THÊM: Tự động điền mã mới
             txtMa.setText(generateNextTableId(model)); // Gọi hàm tự động tạo mã B0x
-            txtMa.setEditable(false);                  // Khóa lại không cho nhập đè
-            txtViTri.requestFocus();                   // Con trỏ chuột nhảy xuống ô Vị trí
+            txtMa.setEditable(false); // Khóa lại không cho nhập đè
+            txtViTri.requestFocus(); // Con trỏ chuột nhảy xuống ô Vị trí
         }
         addFormRow(form, gbc, 0, "Mã Bàn:", txtMa);
         addFormRow(form, gbc, 1, "Vị Trí/Khu vực:", txtViTri);
@@ -214,11 +229,12 @@ public class ManagerDashboard extends JFrame {
         // Tìm đoạn này trong ManagerDashboard.java và thay thế:
         btnSave.addActionListener(e -> {
             if (txtMa.getText().trim().isEmpty() || txtViTri.getText().trim().isEmpty()) {
-                warn("Vui lòng không để trống thông tin!"); return;
+                warn("Vui lòng không để trống thông tin!");
+                return;
             }
 
             // THAY ĐỔI Ở ĐÂY: Dùng setter thay vì builder
-            entity.Ban b = new entity.Ban();
+            BanDTO b = new BanDTO();
             b.setMaBan(txtMa.getText().trim());
             b.setViTri(txtViTri.getText().trim());
             b.setTrangThai(cbStatus.getSelectedItem().toString());
@@ -243,14 +259,16 @@ public class ManagerDashboard extends JFrame {
         dlg.add(wrapBtn(btnSave), BorderLayout.SOUTH);
         dlg.setVisible(true);
     }
+
     private void loadTableData(DefaultTableModel model) {
         model.setRowCount(0);
         try {
             Response res = client.sendRequest(new Request(CommandType.GET_TABLES, null));
             if (res.isSuccess() && res.getData() != null) {
-                List<entity.Ban> list = (List<entity.Ban>) res.getData();
-                for (entity.Ban b : list) {
-                    model.addRow(new Object[]{
+                @SuppressWarnings("unchecked")
+                List<BanDTO> list = (List<BanDTO>) res.getData();
+                for (BanDTO b : list) {
+                    model.addRow(new Object[] {
                             b.getMaBan(),
                             b.getViTri(),
                             b.getTrangThai(),
@@ -262,6 +280,7 @@ public class ManagerDashboard extends JFrame {
             ex.printStackTrace();
         }
     }
+
     // ══════════════════════════════════════════════════════════
     // SIDEBAR
     // ══════════════════════════════════════════════════════════
@@ -276,7 +295,7 @@ public class ManagerDashboard extends JFrame {
         brand.setBackground(C_SIDEBAR_BG);
         brand.setBorder(new EmptyBorder(28, 24, 20, 24));
 
-        JLabel ico = new JLabel("☕");
+        JLabel ico = new JLabel();
         ico.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
         ico.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -341,8 +360,7 @@ public class ManagerDashboard extends JFrame {
         userCard.setBackground(new Color(22, 26, 38));
         userCard.setBorder(new CompoundBorder(
                 new LineBorder(new Color(40, 46, 64), 1, true),
-                new EmptyBorder(10, 12, 10, 12)
-        ));
+                new EmptyBorder(10, 12, 10, 12)));
         userCard.setMaximumSize(new Dimension(999, 56));
         userCard.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -378,21 +396,28 @@ public class ManagerDashboard extends JFrame {
         btnLogout.setBackground(new Color(255, 245, 245, 18));
         btnLogout.setBorder(new CompoundBorder(
                 new LineBorder(new Color(245, 101, 96, 60), 1, true),
-                new EmptyBorder(8, 14, 8, 14)
-        ));
+                new EmptyBorder(8, 14, 8, 14)));
         btnLogout.setFocusPainted(false);
         btnLogout.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLogout.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnLogout.setMaximumSize(new Dimension(999, 38));
         btnLogout.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btnLogout.setBackground(new Color(245, 101, 96, 40)); }
-            public void mouseExited (MouseEvent e) { btnLogout.setBackground(new Color(255, 245, 245, 18)); }
+            public void mouseEntered(MouseEvent e) {
+                btnLogout.setBackground(new Color(245, 101, 96, 40));
+            }
+
+            public void mouseExited(MouseEvent e) {
+                btnLogout.setBackground(new Color(255, 245, 245, 18));
+            }
         });
         btnLogout.addActionListener(e -> {
             int ok = JOptionPane.showConfirmDialog(this,
                     "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận đăng xuất",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if (ok == JOptionPane.YES_OPTION) { dispose(); new LoginFrame(client).setVisible(true); }
+            if (ok == JOptionPane.YES_OPTION) {
+                dispose();
+                new LoginFrame(client).setVisible(true);
+            }
         });
         bottom.add(btnLogout);
 
@@ -416,15 +441,21 @@ public class ManagerDashboard extends JFrame {
 
         btn.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
-                if (btn != activeNavButton) btn.setBackground(C_NAV_HOVER);
+                if (btn != activeNavButton)
+                    btn.setBackground(C_NAV_HOVER);
             }
+
             public void mouseExited(MouseEvent e) {
-                if (btn != activeNavButton) { btn.setBackground(C_SIDEBAR_BG); btn.setForeground(new Color(160, 174, 192)); }
+                if (btn != activeNavButton) {
+                    btn.setBackground(C_SIDEBAR_BG);
+                    btn.setForeground(new Color(160, 174, 192));
+                }
             }
         });
 
         btn.addActionListener(e -> {
-            if (activeNavButton != null) setNavActive(activeNavButton, false);
+            if (activeNavButton != null)
+                setNavActive(activeNavButton, false);
             setNavActive(btn, true);
             activeNavButton = btn;
             cardLayout.show(mainContentPanel, card);
@@ -444,9 +475,11 @@ public class ManagerDashboard extends JFrame {
     }
 
     private String initials(String name) {
-        if (name == null || name.isEmpty()) return "?";
+        if (name == null || name.isEmpty())
+            return "?";
         String[] parts = name.trim().split("\\s+");
-        if (parts.length == 1) return String.valueOf(parts[0].charAt(0)).toUpperCase();
+        if (parts.length == 1)
+            return String.valueOf(parts[0].charAt(0)).toUpperCase();
         return String.valueOf(parts[0].charAt(0)).toUpperCase()
                 + String.valueOf(parts[parts.length - 1].charAt(0)).toUpperCase();
     }
@@ -463,8 +496,7 @@ public class ManagerDashboard extends JFrame {
         topBar.setBackground(C_CARD_BG);
         topBar.setBorder(new CompoundBorder(
                 new MatteBorder(0, 0, 1, 0, C_BORDER),
-                new EmptyBorder(20, 32, 20, 32)
-        ));
+                new EmptyBorder(20, 32, 20, 32)));
 
         JPanel titleGroup = new JPanel();
         titleGroup.setLayout(new BoxLayout(titleGroup, BoxLayout.Y_AXIS));
@@ -493,7 +525,7 @@ public class ManagerDashboard extends JFrame {
     // THỐNG KÊ (DASHBOARD)
     // ══════════════════════════════════════════════════════════
     private JPanel createDashboardPanel() {
-        JPanel page = buildPageShell("", "Thống Kê", "Tổng quan hoạt động kinh doanh hôm nay");
+        JPanel page = buildPageShell("", "Dashboard", "Tổng quan hoạt động kinh doanh hôm nay");
 
         JPanel body = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         body.setBackground(C_PAGE_BG);
@@ -506,16 +538,15 @@ public class ManagerDashboard extends JFrame {
         body.add(cardRev);
         body.add(cardOrder);
         body.add(cardTable);
-        
+
         SimpleBarChart chart = new SimpleBarChart("Doanh thu 7 ngày gần nhất (VNĐ)");
         chart.setPreferredSize(new Dimension(880, 400));
         chart.setBorder(new CompoundBorder(
-            new LineBorder(C_BORDER, 1, true),
-            new EmptyBorder(10, 10, 10, 10)
-        ));
+                new LineBorder(C_BORDER, 1, true),
+                new EmptyBorder(10, 10, 10, 10)));
         chart.setBarColor(C_ACCENT);
         body.add(chart);
-        
+
         loadDashboardData(cardRev, cardOrder, cardTable, chart);
 
         // Add refresh button for dashboard
@@ -533,9 +564,8 @@ public class ManagerDashboard extends JFrame {
         card.setBackground(Color.WHITE);
         card.setPreferredSize(new Dimension(280, 120));
         card.setBorder(new CompoundBorder(
-            new MatteBorder(4, 0, 0, 0, accent),
-            new EmptyBorder(20, 20, 20, 20)
-        ));
+                new MatteBorder(4, 0, 0, 0, accent),
+                new EmptyBorder(20, 20, 20, 20)));
 
         JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(F_SECTION);
@@ -547,7 +577,7 @@ public class ManagerDashboard extends JFrame {
 
         card.add(lblTitle, BorderLayout.NORTH);
         card.add(lblValue, BorderLayout.CENTER);
-        
+
         card.putClientProperty("valueLabel", lblValue);
         return card;
     }
@@ -559,56 +589,59 @@ public class ManagerDashboard extends JFrame {
                 try {
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
-                        List<entity.Ban> listBan = (List<entity.Ban>) resTables.getData();
+                        @SuppressWarnings("unchecked")
+                        List<BanDTO> listBan = (List<BanDTO>) resTables.getData();
                         // Đảm bảo điều kiện filter là "Có khách" (viết hoa chữ C)
                         long activeTables = listBan.stream()
                                 .filter(b -> "Có khách".equals(b.getTrangThai()))
                                 .count();
-                        SwingUtilities.invokeLater(() ->
-                                ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables))
-                        );
+                        SwingUtilities.invokeLater(() -> ((JLabel) cardTable.getClientProperty("valueLabel"))
+                                .setText(String.valueOf(activeTables)));
                     }
 
                     Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
                     if (resInvoices.isSuccess() && resInvoices.getData() != null) {
-                        List<entity.HoaDon> listHD = (List<entity.HoaDon>) resInvoices.getData();
+                        @SuppressWarnings("unchecked")
+                        List<HoaDonDTO> listHD = (List<HoaDonDTO>) resInvoices.getData();
                         LocalDate today = LocalDate.now();
                         long count = 0;
                         double rev = 0;
-                        
-                        // Prepare chart data (last 7 days)
+
                         Map<String, Double> chartData = new LinkedHashMap<>();
                         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
                         for (int i = 6; i >= 0; i--) {
                             chartData.put(today.minusDays(i).format(fmt), 0.0);
                         }
-                        
-                        for (entity.HoaDon hd : listHD) {
+
+                        for (HoaDonDTO hd : listHD) {
                             if (hd.getNgayTao() != null) {
                                 // Chỉ tính các hóa đơn Đã thanh toán vào doanh thu
                                 boolean isPaid = "Đã thanh toán".equals(hd.getTrangThai());
-                                
+
                                 if (hd.getNgayTao().equals(today) && isPaid) {
                                     count++;
                                     rev += hd.getTongTien();
                                 }
-                                
+
                                 String dateStr = hd.getNgayTao().format(fmt);
                                 if (chartData.containsKey(dateStr) && isPaid) {
                                     chartData.put(dateStr, chartData.get(dateStr) + hd.getTongTien());
                                 }
                             }
                         }
-                        
+
                         final long fCount = count;
                         final double fRev = rev;
                         SwingUtilities.invokeLater(() -> {
-                            ((JLabel)cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fCount));
-                            ((JLabel)cardRev.getClientProperty("valueLabel")).setText(String.format("%,.0f VNĐ", fRev));
+                            ((JLabel) cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fCount));
+                            ((JLabel) cardRev.getClientProperty("valueLabel"))
+                                    .setText(String.format("%,.0f VNĐ", fRev));
                             chart.updateData(chartData);
                         });
                     }
-                } catch (Exception ex) { ex.printStackTrace(); }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
                 return null;
             }
         }.execute();
@@ -632,54 +665,67 @@ public class ManagerDashboard extends JFrame {
         // Left Actions
         JPanel actionsLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         actionsLeft.setOpaque(false);
-        JButton btnAdd  = mkButton("Thêm Món",  C_SUCCESS);
+        JButton btnAdd = mkButton("Thêm Món", C_SUCCESS);
         actionsLeft.add(btnAdd);
 
         // Right Actions (Search + Refresh)
         JPanel actionsRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actionsRight.setOpaque(false);
-        
+
         JTextField txtSearch = new JTextField(20);
         txtSearch.putClientProperty("JTextField.placeholderText", "Tìm kiếm món...");
         styleField(txtSearch);
-        
-        JButton btnRef  = mkButton("Làm Mới",    C_ACCENT);
-        
+
+        JButton btnRef = mkButton("Làm Mới", C_ACCENT);
+
         actionsRight.add(txtSearch);
         actionsRight.add(btnRef);
 
         toolbar.add(actionsLeft, BorderLayout.WEST);
         toolbar.add(actionsRight, BorderLayout.EAST);
 
-        String[] menuCols = {"Mã Đồ Uống", "Tên Đồ Uống", "Giá Tiền (VNĐ)", "Loại", "Hành động"};
+        String[] menuCols = { "Mã Đồ Uống", "Tên Đồ Uống", "Giá Tiền (VNĐ)", "Loại", "Hành động" };
         DefaultTableModel menuModel = new DefaultTableModel(menuCols, 0) {
-            public boolean isCellEditable(int r, int c) { return c == 4; }
+            public boolean isCellEditable(int r, int c) {
+                return c == 4;
+            }
         };
         JTable menuTable = buildTable(menuModel);
-        
+
         // Setup Search Sorter
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(menuModel);
         menuTable.setRowSorter(sorter);
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
             private void search() {
                 String text = txtSearch.getText();
-                if (text.trim().length() == 0) sorter.setRowFilter(null);
-                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                if (text.trim().length() == 0)
+                    sorter.setRowFilter(null);
+                else
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
 
         // Center price column
         centerColumn(menuTable, 2);
-        
+
         // Setup Action Column
         TableActionEvent event = new TableActionEvent() {
             @Override
             public void onEdit(int row) {
                 int modelRow = menuTable.convertRowIndexToModel(row);
-                DoUong d = new DoUong();
+                DoUongDTO d = new DoUongDTO();
                 d.setMaDoUong((String) menuModel.getValueAt(modelRow, 0));
                 d.setTenDoUong((String) menuModel.getValueAt(modelRow, 1));
                 d.setGiaTien(((String) menuModel.getValueAt(modelRow, 2)).replace(",", ""));
@@ -689,16 +735,22 @@ public class ManagerDashboard extends JFrame {
 
             @Override
             public void onDelete(int row) {
-                if (menuTable.isEditing()) menuTable.getCellEditor().stopCellEditing();
+                if (menuTable.isEditing())
+                    menuTable.getCellEditor().stopCellEditing();
                 int modelRow = menuTable.convertRowIndexToModel(row);
-                String ma  = (String) menuModel.getValueAt(modelRow, 0);
+                String ma = (String) menuModel.getValueAt(modelRow, 0);
                 String ten = (String) menuModel.getValueAt(modelRow, 1);
                 if (confirm("Chắc chắn xóa món: " + ten + "?")) {
                     try {
                         Response res = client.sendRequest(new Request(CommandType.MANAGE_MENU_DELETE, ma));
-                        if (res.isSuccess()) { info("Xóa thành công!"); loadMenuData(menuModel); }
-                        else err(res.getMessage());
-                    } catch (Exception ex) { ex.printStackTrace(); }
+                        if (res.isSuccess()) {
+                            info("Xóa thành công!");
+                            loadMenuData(menuModel);
+                        } else
+                            err(res.getMessage());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         };
@@ -720,7 +772,7 @@ public class ManagerDashboard extends JFrame {
         return page;
     }
 
-    private void showDoUongFormDialog(DoUong existing, DefaultTableModel model) {
+    private void showDoUongFormDialog(DoUongDTO existing, DefaultTableModel model) {
         JDialog dlg = buildDialog(existing == null ? "Thêm Món Mới" : "Sửa Thông Tin Món", 420, 340);
 
         JPanel form = new JPanel(new GridBagLayout());
@@ -728,13 +780,15 @@ public class ManagerDashboard extends JFrame {
         form.setBorder(new EmptyBorder(24, 28, 8, 28));
         GridBagConstraints gbc = formGbc();
 
-        JTextField txtMa   = styledField();
-        JTextField txtTen  = styledField();
-        JTextField txtGia  = styledField();
-        JComboBox<String> cbLoai = styledCombo(new String[]{"Cà phê","Trà","Sinh tố","Nước ép","Khác"});
+        JTextField txtMa = styledField();
+        JTextField txtTen = styledField();
+        JTextField txtGia = styledField();
+        JComboBox<String> cbLoai = styledCombo(new String[] { "Cà phê", "Trà", "Sinh tố", "Nước ép", "Khác" });
 
         if (existing != null) {
-            txtMa.setText(existing.getMaDoUong()); txtMa.setEditable(false); txtMa.setForeground(C_TEXT_MUTED);
+            txtMa.setText(existing.getMaDoUong());
+            txtMa.setEditable(false);
+            txtMa.setForeground(C_TEXT_MUTED);
             txtTen.setText(existing.getTenDoUong());
             txtGia.setText(existing.getGiaTien());
             cbLoai.setSelectedItem(existing.getLoaiDoUong());
@@ -742,36 +796,51 @@ public class ManagerDashboard extends JFrame {
             // Fetch real ID from server
             try {
                 Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "DO_UONG"));
-                if (res.isSuccess()) txtMa.setText((String) res.getData());
-                else txtMa.setText("DU" + System.currentTimeMillis() % 100000);
-            } catch (Exception ex) { txtMa.setText("DU" + System.currentTimeMillis() % 100000); }
+                if (res.isSuccess())
+                    txtMa.setText((String) res.getData());
+                else
+                    txtMa.setText("DU" + System.currentTimeMillis() % 100000);
+            } catch (Exception ex) {
+                txtMa.setText("DU" + System.currentTimeMillis() % 100000);
+            }
         }
 
-        addFormRow(form, gbc, 0, "Mã Đồ Uống",      txtMa);
-        addFormRow(form, gbc, 1, "Tên Đồ Uống",     txtTen);
-        addFormRow(form, gbc, 2, "Giá Tiền (VNĐ)",  txtGia);
-        addFormRow(form, gbc, 3, "Loại",             cbLoai);
+        addFormRow(form, gbc, 0, "Mã Đồ Uống", txtMa);
+        addFormRow(form, gbc, 1, "Tên Đồ Uống", txtTen);
+        addFormRow(form, gbc, 2, "Giá Tiền (VNĐ)", txtGia);
+        addFormRow(form, gbc, 3, "Loại", cbLoai);
 
         JButton btnSave = mkButton("Lưu thông tin", C_ACCENT);
         btnSave.addActionListener(e -> {
             if (txtTen.getText().isEmpty() || txtGia.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(dlg, "Vui lòng nhập đầy đủ thông tin!", "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dlg, "Vui lòng nhập đầy đủ thông tin!", "Thiếu thông tin",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            try { Double.parseDouble(txtGia.getText()); }
-            catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dlg, "Giá tiền phải là số hợp lệ!", "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+            try {
+                Double.parseDouble(txtGia.getText());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dlg, "Giá tiền phải là số hợp lệ!", "Dữ liệu không hợp lệ",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            DoUong d = new DoUong();
-            d.setMaDoUong(txtMa.getText()); d.setTenDoUong(txtTen.getText());
-            d.setGiaTien(txtGia.getText()); d.setLoaiDoUong((String) cbLoai.getSelectedItem());
+            DoUongDTO d = (existing == null) ? new DoUongDTO() : existing;
+            d.setMaDoUong(txtMa.getText());
+            d.setTenDoUong(txtTen.getText());
+            d.setGiaTien(txtGia.getText());
+            d.setLoaiDoUong((String) cbLoai.getSelectedItem());
             CommandType cmd = existing == null ? CommandType.MANAGE_MENU_ADD : CommandType.MANAGE_MENU_UPDATE;
             try {
                 Response res = client.sendRequest(new Request(cmd, d));
-                if (res.isSuccess()) { JOptionPane.showMessageDialog(dlg, "Thành công!"); loadMenuData(model); dlg.dispose(); }
-                else JOptionPane.showMessageDialog(dlg, res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) { ex.printStackTrace(); }
+                if (res.isSuccess()) {
+                    JOptionPane.showMessageDialog(dlg, "Thành công!");
+                    loadMenuData(model);
+                    dlg.dispose();
+                } else
+                    JOptionPane.showMessageDialog(dlg, res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         });
 
         dlg.add(form, BorderLayout.CENTER);
@@ -784,14 +853,21 @@ public class ManagerDashboard extends JFrame {
         try {
             Response res = client.sendRequest(new Request(CommandType.GET_MENU, null));
             if (res.isSuccess() && res.getData() != null) {
-                for (DoUong d : (List<DoUong>) res.getData()) {
+                @SuppressWarnings("unchecked")
+                List<DoUongDTO> list = (List<DoUongDTO>) res.getData();
+                for (DoUongDTO d : list) {
                     String price;
-                    try { price = String.format("%,.0f", Double.parseDouble(d.getGiaTien())); }
-                    catch (NumberFormatException e) { price = d.getGiaTien(); }
-                    model.addRow(new Object[]{d.getMaDoUong(), d.getTenDoUong(), price, d.getLoaiDoUong(), ""});
+                    try {
+                        price = String.format("%,.0f", Double.parseDouble(d.getGiaTien()));
+                    } catch (NumberFormatException e) {
+                        price = d.getGiaTien();
+                    }
+                    model.addRow(new Object[] { d.getMaDoUong(), d.getTenDoUong(), price, d.getLoaiDoUong(), "" });
                 }
             }
-        } catch (Exception ex) { ex.printStackTrace(); }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -804,9 +880,11 @@ public class ManagerDashboard extends JFrame {
         body.setBackground(C_PAGE_BG);
         body.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        String[] cols = {"Mã NV", "Họ Tên", "Số ĐT", "Chức Vụ", "Ngày Vào Làm", "Ngày Nghỉ", "Hành động"};
+        String[] cols = { "Mã NV", "Họ Tên", "Số ĐT", "Chức Vụ", "Ngày Vào Làm", "Ngày Nghỉ", "Hành động" };
         DefaultTableModel empModel = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return c == 6; }
+            public boolean isCellEditable(int r, int c) {
+                return c == 6;
+            }
         };
         JTable empTable = buildTable(empModel);
 
@@ -822,7 +900,7 @@ public class ManagerDashboard extends JFrame {
                     comp.setForeground(sel ? Color.WHITE : C_TEXT_PRIMARY);
                 }
                 comp.setBackground(sel ? C_ACCENT_DARK : (r % 2 == 0 ? Color.WHITE : C_TR_STRIPE));
-                ((JLabel)comp).setBorder(new EmptyBorder(0, 12, 0, 12));
+                ((JLabel) comp).setBorder(new EmptyBorder(0, 12, 0, 12));
                 return comp;
             }
         });
@@ -834,7 +912,7 @@ public class ManagerDashboard extends JFrame {
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
 
-        JButton btnAdd  = mkButton("Thêm NV",  C_SUCCESS);
+        JButton btnAdd = mkButton("Thêm NV", C_SUCCESS);
         left.add(btnAdd);
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -850,27 +928,37 @@ public class ManagerDashboard extends JFrame {
         toggleFired.setBackground(C_CARD_BG);
         toggleFired.setBorder(new CompoundBorder(
                 new LineBorder(C_BORDER, 1, true),
-                new EmptyBorder(6, 14, 6, 14)
-        ));
+                new EmptyBorder(6, 14, 6, 14)));
         toggleFired.setFocusPainted(false);
         toggleFired.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        JButton btnRef  = mkButton("Làm Mới",  C_ACCENT);
+        JButton btnRef = mkButton("Làm Mới", C_ACCENT);
 
         right.add(toggleFired);
         right.add(txtSearch);
         right.add(btnRef);
-        
+
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(empModel);
         empTable.setRowSorter(sorter);
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
             private void search() {
                 String text = txtSearch.getText();
-                if (text.trim().length() == 0) sorter.setRowFilter(null);
-                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                if (text.trim().length() == 0)
+                    sorter.setRowFilter(null);
+                else
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
 
@@ -884,31 +972,39 @@ public class ManagerDashboard extends JFrame {
             public void onEdit(int row) {
                 int modelRow = empTable.convertRowIndexToModel(row);
                 String maNV = (String) empModel.getValueAt(modelRow, 0);
-                NhanVien nv = new NhanVien();
+                NhanVienDTO nv = new NhanVienDTO();
                 nv.setMaNhanVien(maNV);
                 nv.setHoTen((String) empModel.getValueAt(modelRow, 1));
                 nv.setSdt((String) empModel.getValueAt(modelRow, 2));
                 nv.setChucVu((String) empModel.getValueAt(modelRow, 3));
-                TaiKhoan tk = new TaiKhoan();
+                TaiKhoanDTO tk = new TaiKhoanDTO();
                 tk.setTenDangNhap(maNV + "_user");
                 tk.setTaiKhoanQuanLi("Manager".equals(nv.getChucVu()));
-                showEmployeeFormDialog(new Object[]{nv, tk}, empModel, toggleFired.isSelected());
+                showEmployeeFormDialog(new Object[] { nv, tk }, empModel, toggleFired.isSelected());
             }
 
             @Override
             public void onDelete(int row) {
-                if (empTable.isEditing()) empTable.getCellEditor().stopCellEditing();
+                if (empTable.isEditing())
+                    empTable.getCellEditor().stopCellEditing();
                 int modelRow = empTable.convertRowIndexToModel(row);
-                if (empModel.getValueAt(modelRow, 5) != null && !empModel.getValueAt(modelRow, 5).toString().isEmpty()) {
-                    info("Nhân viên này đã nghỉ việc rồi!"); return;
+                if (empModel.getValueAt(modelRow, 5) != null
+                        && !empModel.getValueAt(modelRow, 5).toString().isEmpty()) {
+                    info("Nhân viên này đã nghỉ việc rồi!");
+                    return;
                 }
                 String maNV = (String) empModel.getValueAt(modelRow, 0);
                 if (confirm("Chắc chắn cho nhân viên " + maNV + " thôi việc?")) {
                     try {
                         Response res = client.sendRequest(new Request(CommandType.MANAGE_EMPLOYEE_DELETE, maNV));
-                        if (res.isSuccess()) { info("Đã cập nhật trạng thái nghỉ việc!"); loadEmployeeData(empModel, toggleFired.isSelected()); }
-                        else err(res.getMessage());
-                    } catch (Exception ex) { ex.printStackTrace(); }
+                        if (res.isSuccess()) {
+                            info("Đã cập nhật trạng thái nghỉ việc!");
+                            loadEmployeeData(empModel, toggleFired.isSelected());
+                        } else
+                            err(res.getMessage());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         };
@@ -931,16 +1027,20 @@ public class ManagerDashboard extends JFrame {
         try {
             Response res = client.sendRequest(new Request(CommandType.GET_EMPLOYEES, includeFired));
             if (res.isSuccess() && res.getData() != null) {
-                for (NhanVien n : (List<NhanVien>) res.getData()) {
-                    model.addRow(new Object[]{
+                @SuppressWarnings("unchecked")
+                List<NhanVienDTO> list = (List<NhanVienDTO>) res.getData();
+                for (NhanVienDTO n : list) {
+                    model.addRow(new Object[] {
                             n.getMaNhanVien(), n.getHoTen(), n.getSdt(), n.getChucVu(),
-                            n.getNgayVaoLam()  != null ? n.getNgayVaoLam().toString()  : "",
-                            n.getNgayThoiViec()!= null ? n.getNgayThoiViec().toString(): "",
+                            n.getNgayVaoLam() != null ? n.getNgayVaoLam().toString() : "",
+                            n.getNgayThoiViec() != null ? n.getNgayThoiViec().toString() : "",
                             ""
                     });
                 }
             }
-        } catch (Exception ex) { ex.printStackTrace(); }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     private void showEmployeeFormDialog(Object[] existingData, DefaultTableModel model, boolean chkState) {
@@ -951,67 +1051,91 @@ public class ManagerDashboard extends JFrame {
         form.setBorder(new EmptyBorder(24, 28, 8, 28));
         GridBagConstraints gbc = formGbc();
 
-        JTextField     txtMaNV    = styledField();
-        JTextField     txtHoTen   = styledField();
-        JTextField     txtSdt     = styledField();
-        JComboBox<String> cbChucVu = styledCombo(new String[]{"Staff","Manager"});
-        JTextField     txtUser    = styledField();
-        JPasswordField txtPass    = new JPasswordField();
+        JTextField txtMaNV = styledField();
+        JTextField txtHoTen = styledField();
+        JTextField txtSdt = styledField();
+        JComboBox<String> cbChucVu = styledCombo(new String[] { "Staff", "Manager" });
+        JTextField txtUser = styledField();
+        JPasswordField txtPass = new JPasswordField();
         styleField(txtPass);
-        JCheckBox      chkMgr     = new JCheckBox("Tài khoản Quản lý");
-        chkMgr.setFont(F_BODY); chkMgr.setOpaque(false); chkMgr.setForeground(C_TEXT_PRIMARY);
+        JCheckBox chkMgr = new JCheckBox("Tài khoản Quản lý");
+        chkMgr.setFont(F_BODY);
+        chkMgr.setOpaque(false);
+        chkMgr.setForeground(C_TEXT_PRIMARY);
 
         if (existingData != null) {
-            NhanVien nv = (NhanVien) existingData[0];
-            TaiKhoan tk = (TaiKhoan) existingData[1];
-            txtMaNV.setText(nv.getMaNhanVien()); txtMaNV.setEditable(false); txtMaNV.setForeground(C_TEXT_MUTED);
-            txtHoTen.setText(nv.getHoTen()); txtSdt.setText(nv.getSdt());
+            NhanVienDTO nv = (NhanVienDTO) existingData[0];
+            TaiKhoanDTO tk = (TaiKhoanDTO) existingData[1];
+            txtMaNV.setText(nv.getMaNhanVien());
+            txtMaNV.setEditable(false);
+            txtMaNV.setForeground(C_TEXT_MUTED);
+            txtHoTen.setText(nv.getHoTen());
+            txtSdt.setText(nv.getSdt());
             cbChucVu.setSelectedItem(nv.getChucVu());
-            txtUser.setText(tk.getTenDangNhap()); chkMgr.setSelected(tk.isTaiKhoanQuanLi());
+            txtUser.setText(tk.getTenDangNhap());
+            chkMgr.setSelected(tk.isTaiKhoanQuanLi());
         } else {
             // Fetch real IDs from server
             try {
                 Response resNV = client.sendRequest(new Request(CommandType.GENERATE_ID, "NHAN_VIEN"));
-                if (resNV.isSuccess()) txtMaNV.setText((String) resNV.getData());
-                
+                if (resNV.isSuccess())
+                    txtMaNV.setText((String) resNV.getData());
+
                 Response resTK = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
-                if (resTK.isSuccess()) txtUser.setText(((String) resTK.getData()).toLowerCase()); // Default username
-            } catch (Exception ex) { ex.printStackTrace(); }
+                if (resTK.isSuccess())
+                    txtUser.setText(((String) resTK.getData()).toLowerCase()); // Default username
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
 
-        addFormRow(form, gbc, 0, "Mã Nhân Viên",   txtMaNV);
-        addFormRow(form, gbc, 1, "Họ Tên",          txtHoTen);
-        addFormRow(form, gbc, 2, "Số Điện Thoại",   txtSdt);
-        addFormRow(form, gbc, 3, "Chức Vụ",         cbChucVu);
-        addFormRow(form, gbc, 4, "Tên Đăng Nhập",   txtUser);
-        addFormRow(form, gbc, 5, "Mật Khẩu",        txtPass);
-        addFormRow(form, gbc, 6, "Quyền",            chkMgr);
+        addFormRow(form, gbc, 0, "Mã Nhân Viên", txtMaNV);
+        addFormRow(form, gbc, 1, "Họ Tên", txtHoTen);
+        addFormRow(form, gbc, 2, "Số Điện Thoại", txtSdt);
+        addFormRow(form, gbc, 3, "Chức Vụ", cbChucVu);
+        addFormRow(form, gbc, 4, "Tên Đăng Nhập", txtUser);
+        addFormRow(form, gbc, 5, "Mật Khẩu", txtPass);
+        addFormRow(form, gbc, 6, "Quyền", chkMgr);
 
         JButton btnSave = mkButton("Lưu thông tin", C_ACCENT);
         btnSave.addActionListener(e -> {
-            NhanVien nv = new NhanVien();
-            nv.setMaNhanVien(txtMaNV.getText()); nv.setHoTen(txtHoTen.getText());
-            nv.setSdt(txtSdt.getText()); nv.setChucVu((String) cbChucVu.getSelectedItem());
-            if (existingData == null) nv.setNgayVaoLam(LocalDate.now());
-            TaiKhoan tk = new TaiKhoan();
+            NhanVienDTO nv = new NhanVienDTO();
+            nv.setMaNhanVien(txtMaNV.getText());
+            nv.setHoTen(txtHoTen.getText());
+            nv.setSdt(txtSdt.getText());
+            nv.setChucVu((String) cbChucVu.getSelectedItem());
+            if (existingData == null)
+                nv.setNgayVaoLam(LocalDate.now());
+            TaiKhoanDTO tk = new TaiKhoanDTO();
             if (existingData == null) {
                 try {
                     Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
-                    if (res.isSuccess()) tk.setMaTaiKhoan((String) res.getData());
-                    else tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000);
-                } catch (Exception ex) { tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000); }
+                    if (res.isSuccess())
+                        tk.setMaTaiKhoan((String) res.getData());
+                    else
+                        tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000);
+                } catch (Exception ex) {
+                    tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000);
+                }
             } else {
-                tk.setMaTaiKhoan(((TaiKhoan)existingData[1]).getMaTaiKhoan());
+                tk.setMaTaiKhoan(((TaiKhoanDTO) existingData[1]).getMaTaiKhoan());
             }
             tk.setTenDangNhap(txtUser.getText());
             tk.setMatKhau(new String(txtPass.getPassword()));
             tk.setTaiKhoanQuanLi(chkMgr.isSelected());
-            CommandType cmd = existingData == null ? CommandType.MANAGE_EMPLOYEE_ADD : CommandType.MANAGE_EMPLOYEE_UPDATE;
+            CommandType cmd = existingData == null ? CommandType.MANAGE_EMPLOYEE_ADD
+                    : CommandType.MANAGE_EMPLOYEE_UPDATE;
             try {
-                Response res = client.sendRequest(new Request(cmd, new Object[]{nv, tk}));
-                if (res.isSuccess()) { JOptionPane.showMessageDialog(dlg, "Thành công!"); loadEmployeeData(model, chkState); dlg.dispose(); }
-                else JOptionPane.showMessageDialog(dlg, res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) { ex.printStackTrace(); }
+                Response res = client.sendRequest(new Request(cmd, new Object[] { nv, tk }));
+                if (res.isSuccess()) {
+                    JOptionPane.showMessageDialog(dlg, "Thành công!");
+                    loadEmployeeData(model, chkState);
+                    dlg.dispose();
+                } else
+                    JOptionPane.showMessageDialog(dlg, res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         });
 
         dlg.add(form, BorderLayout.CENTER);
@@ -1029,9 +1153,12 @@ public class ManagerDashboard extends JFrame {
         body.setBackground(C_PAGE_BG);
         body.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        String[] cols = {"Mã Hóa Đơn","Ngày Thanh Toán","Mã Bàn","Nhân Viên","Tổng Tiền (VNĐ)","Trạng Thái","Ghi Chú"};
+        String[] cols = { "Mã Hóa Đơn", "Ngày Thanh Toán", "Mã Bàn", "Nhân Viên", "Tổng Tiền (VNĐ)", "Trạng Thái",
+                "Ghi Chú" };
         DefaultTableModel invModel = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         JTable invTable = buildTable(invModel);
         centerColumn(invTable, 4);
@@ -1047,9 +1174,12 @@ public class ManagerDashboard extends JFrame {
                 if (sel) {
                     l.setForeground(Color.WHITE);
                 } else {
-                    if ("Đã thanh toán".equals(val)) l.setForeground(C_SUCCESS);
-                    else if ("Chưa thanh toán".equals(val)) l.setForeground(C_DANGER);
-                    else l.setForeground(C_TEXT_PRIMARY);
+                    if ("Đã thanh toán".equals(val))
+                        l.setForeground(C_SUCCESS);
+                    else if ("Chưa thanh toán".equals(val))
+                        l.setForeground(C_DANGER);
+                    else
+                        l.setForeground(C_TEXT_PRIMARY);
                 }
                 return l;
             }
@@ -1063,7 +1193,7 @@ public class ManagerDashboard extends JFrame {
                     if (row != -1) {
                         int modelRow = invTable.convertRowIndexToModel(row);
                         if (currentInvoices != null && modelRow < currentInvoices.size()) {
-                            HoaDon h = currentInvoices.get(modelRow);
+                            HoaDonDTO h = currentInvoices.get(modelRow);
                             new ReceiptDialog(ManagerDashboard.this, client, h, h.getTongTien()).setVisible(true);
                         }
                     }
@@ -1087,17 +1217,28 @@ public class ManagerDashboard extends JFrame {
         right.add(txtSearch);
         right.add(btnRef);
         toolbar.add(right, BorderLayout.EAST);
-        
+
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(invModel);
         invTable.setRowSorter(sorter);
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                search();
+            }
+
             private void search() {
                 String text = txtSearch.getText();
-                if (text.trim().length() == 0) sorter.setRowFilter(null);
-                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                if (text.trim().length() == 0)
+                    sorter.setRowFilter(null);
+                else
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
 
@@ -1116,17 +1257,22 @@ public class ManagerDashboard extends JFrame {
         try {
             Response res = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
             if (res.isSuccess() && res.getData() != null) {
-                currentInvoices = (List<HoaDon>) res.getData();
+                @SuppressWarnings("unchecked")
+                List<HoaDonDTO> list = (List<HoaDonDTO>) res.getData();
+                currentInvoices = list;
                 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                for (HoaDon h : currentInvoices) {
-                    String ngay  = h.getNgayTao() != null ? h.getNgayTao().format(fmt) : "";
+                for (HoaDonDTO h : currentInvoices) {
+                    String ngay = h.getNgayTao() != null ? h.getNgayTao().format(fmt) : "";
                     String maBan = (h.getBan() != null) ? h.getBan().getMaBan() : "N/A";
-                    String nv    = (h.getNhanVien() != null) ? h.getNhanVien().getHoTen() : "N/A";
-                    String tt    = h.getTrangThai() != null ? h.getTrangThai() : "Đã thanh toán";
-                    model.addRow(new Object[]{h.getMaHoaDon(), ngay, maBan, nv, String.format("%,.0f", h.getTongTien()), tt, h.getGhiChu()});
+                    String nv = (h.getNhanVien() != null) ? h.getNhanVien().getHoTen() : "N/A";
+                    String tt = h.getTrangThai() != null ? h.getTrangThai() : "Đã thanh toán";
+                    model.addRow(new Object[] { h.getMaHoaDon(), ngay, maBan, nv,
+                            String.format("%,.0f", h.getTongTien()), tt, h.getGhiChu() });
                 }
             }
-        } catch (Exception ex) { ex.printStackTrace(); }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -1175,8 +1321,7 @@ public class ManagerDashboard extends JFrame {
         JScrollPane sp = new JScrollPane(table);
         sp.setBorder(new CompoundBorder(
                 new LineBorder(C_BORDER, 1, true),
-                BorderFactory.createEmptyBorder()
-        ));
+                BorderFactory.createEmptyBorder()));
         sp.getViewport().setBackground(Color.WHITE);
         sp.setBackground(Color.WHITE);
         return sp;
@@ -1199,8 +1344,14 @@ public class ManagerDashboard extends JFrame {
         btn.setBorder(new EmptyBorder(8, 18, 8, 18));
         btn.addMouseListener(new MouseAdapter() {
             Color orig = bg;
-            public void mouseEntered(MouseEvent e) { btn.setBackground(orig.darker()); }
-            public void mouseExited (MouseEvent e) { btn.setBackground(orig); }
+
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(orig.darker());
+            }
+
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(orig);
+            }
         });
         return btn;
     }
@@ -1211,7 +1362,7 @@ public class ManagerDashboard extends JFrame {
         dlg.setLocationRelativeTo(this);
         dlg.setLayout(new BorderLayout());
         dlg.getRootPane().setBorder(BorderFactory.createEmptyBorder());
-        ((JPanel)dlg.getContentPane()).setBackground(C_CARD_BG);
+        ((JPanel) dlg.getContentPane()).setBackground(C_CARD_BG);
         return dlg;
     }
 
@@ -1226,8 +1377,7 @@ public class ManagerDashboard extends JFrame {
         f.setForeground(C_TEXT_PRIMARY);
         f.setBorder(new CompoundBorder(
                 new LineBorder(C_BORDER, 1, true),
-                new EmptyBorder(6, 10, 6, 10)
-        ));
+                new EmptyBorder(6, 10, 6, 10)));
         f.setBackground(Color.WHITE);
     }
 
@@ -1243,18 +1393,22 @@ public class ManagerDashboard extends JFrame {
         GridBagConstraints g = new GridBagConstraints();
         g.insets = new Insets(6, 0, 6, 0);
         g.anchor = GridBagConstraints.WEST;
-        g.fill   = GridBagConstraints.HORIZONTAL;
+        g.fill = GridBagConstraints.HORIZONTAL;
         return g;
     }
 
     private void addFormRow(JPanel form, GridBagConstraints gbc, int row, String label, Component field) {
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
         JLabel lbl = new JLabel(label);
-        lbl.setFont(F_LABEL); lbl.setForeground(C_TEXT_MUTED);
+        lbl.setFont(F_LABEL);
+        lbl.setForeground(C_TEXT_MUTED);
         lbl.setBorder(new EmptyBorder(0, 0, 0, 16));
         lbl.setPreferredSize(new Dimension(130, 32));
         form.add(lbl, gbc);
-        gbc.gridx = 1; gbc.weightx = 1;
+        gbc.gridx = 1;
+        gbc.weightx = 1;
         form.add(field, gbc);
     }
 
@@ -1267,19 +1421,31 @@ public class ManagerDashboard extends JFrame {
     }
 
     // Short dialog helpers
-    private void warn(String msg)  { JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.WARNING_MESSAGE); }
-    private void info(String msg)  { JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.INFORMATION_MESSAGE); }
-    private void err(String msg)   { JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE); }
-    private boolean confirm(String msg) {
-        return JOptionPane.showConfirmDialog(this, msg, "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    private void warn(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.WARNING_MESSAGE);
     }
+
+    private void info(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void err(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private boolean confirm(String msg) {
+        return JOptionPane.showConfirmDialog(this, msg, "Xác nhận",
+                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    }
+
     private String generateNextTableId(DefaultTableModel model) {
         int maxId = 0;
         for (int i = 0; i < model.getRowCount(); i++) {
             String maBan = (String) model.getValueAt(i, 0); // Ví dụ: "B05"
             try {
                 int id = Integer.parseInt(maBan.substring(1));
-                if (id > maxId) maxId = id;
+                if (id > maxId)
+                    maxId = id;
             } catch (Exception e) {
             }
         }

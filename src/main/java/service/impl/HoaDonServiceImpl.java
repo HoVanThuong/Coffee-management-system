@@ -3,16 +3,22 @@ package service.impl;
 import dao.impl.BanDaoImpl;
 import dao.impl.HoaDonDaoImpl;
 import db.JPAUtil;
+import dto.ChiTietHoaDonDTO;
+import dto.HoaDonDTO;
 import entity.Ban;
 import entity.ChiTietHoaDon;
 import entity.HoaDon;
+import entity.DoUong;
+import entity.NhanVien;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
+import mapper.Mapper;
 import service.HoaDonService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class HoaDonServiceImpl implements HoaDonService {
     private static final String TRANG_THAI_CHUA_THANH_TOAN = "Chưa thanh toán";
@@ -29,43 +35,51 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public List<HoaDon> getAllInvoices() {
-        return hoaDonDao.findAll();
+    public List<HoaDonDTO> getAllInvoices() {
+        return hoaDonDao.findAll().stream()
+                .map(h -> Mapper.map(h, HoaDonDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public boolean createInvoice(HoaDon hd) {
+    public boolean createInvoice(HoaDonDTO hdDto) {
+        HoaDon hd = Mapper.map(hdDto, HoaDon.class);
         return hoaDonDao.insert(hd);
     }
 
     @Override
-    public List<HoaDon> getInvoicesByDate(java.time.LocalDate date) {
-        return hoaDonDao.findByDate(date);
+    public List<HoaDonDTO> getInvoicesByDate(java.time.LocalDate date) {
+        return hoaDonDao.findByDate(date).stream()
+                .map(h -> Mapper.map(h, HoaDonDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<HoaDon> findInvoicesByDateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate) {
-        return hoaDonDao.findByDateRange(fromDate, toDate);
+    public List<HoaDonDTO> findInvoicesByDateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate) {
+        return hoaDonDao.findByDateRange(fromDate, toDate).stream()
+                .map(h -> Mapper.map(h, HoaDonDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public HoaDon getActiveOrderForTable(String maBan) {
-        return hoaDonDao.getActiveOrderForTable(maBan);
+    public HoaDonDTO getActiveOrderForTable(String maBan) {
+        HoaDon hd = hoaDonDao.getActiveOrderForTable(maBan);
+        return hd != null ? Mapper.map(hd, HoaDonDTO.class) : null;
     }
 
     @Override
-        public boolean handleOrderFood(HoaDon phieu, List<ChiTietHoaDon> cart) {
+    public boolean handleOrderFood(HoaDonDTO phieuDto, List<ChiTietHoaDonDTO> cartDto) {
         EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
 
-            Ban managedBan = em.find(Ban.class, phieu.getBan().getMaBan());
-            entity.NhanVien managedNV = em.find(entity.NhanVien.class, phieu.getNhanVien().getMaNhanVien());
+            Ban managedBan = em.find(Ban.class, phieuDto.getBan().getMaBan());
+            NhanVien managedNV = em.find(NhanVien.class, phieuDto.getNhanVien().getMaNhanVien());
 
             TypedQuery<HoaDon> queryOrder = em.createQuery(
                     "SELECT p FROM HoaDon p WHERE p.ban.maBan = :maBan AND p.trangThai = 'Chưa thanh toán'", HoaDon.class);
-            queryOrder.setParameter("maBan", phieu.getBan().getMaBan());
+            queryOrder.setParameter("maBan", phieuDto.getBan().getMaBan());
 
             HoaDon existingPhieu = null;
             try {
@@ -73,45 +87,45 @@ public class HoaDonServiceImpl implements HoaDonService {
             } catch (NoResultException e) { }
 
             if (existingPhieu != null) {
-
-                for (ChiTietHoaDon ct : cart) {
-                    if (ct.getId() == null) {
+                for (ChiTietHoaDonDTO ctDto : cartDto) {
+                    if (ctDto.getId() == null) {
                         TypedQuery<ChiTietHoaDon> checkQuery = em.createQuery(
                                 "SELECT c FROM ChiTietHoaDon c WHERE c.hoaDon.maHoaDon = :maHD AND c.doUong.maDoUong = :maDU", ChiTietHoaDon.class);
                         checkQuery.setParameter("maHD", existingPhieu.getMaHoaDon());
-                        checkQuery.setParameter("maDU", ct.getDoUong().getMaDoUong());
+                        checkQuery.setParameter("maDU", ctDto.getDoUong().getMaDoUong());
 
                         List<ChiTietHoaDon> existingCts = checkQuery.getResultList();
                         if (!existingCts.isEmpty()) {
                             ChiTietHoaDon existingCt = existingCts.get(0);
-                            existingCt.setSoLuong(existingCt.getSoLuong() + ct.getSoLuong());
+                            existingCt.setSoLuong(existingCt.getSoLuong() + ctDto.getSoLuong());
                             em.merge(existingCt);
                         } else {
+                            ChiTietHoaDon ct = Mapper.map(ctDto, ChiTietHoaDon.class);
                             ct.setHoaDon(existingPhieu);
                             ct.setId(util.IdGenerator.generateChiTietHoaDonId());
                             if (ct.getDoUong() != null) {
-                                entity.DoUong managedDoUong = em.find(entity.DoUong.class, ct.getDoUong().getMaDoUong());
+                                DoUong managedDoUong = em.find(DoUong.class, ct.getDoUong().getMaDoUong());
                                 ct.setDoUong(managedDoUong);
                             }
                             em.persist(ct);
                         }
                     }
                 }
-                existingPhieu.setTongTien(phieu.getTongTien());
+                existingPhieu.setTongTien(phieuDto.getTongTien());
                 em.merge(existingPhieu);
             } else {
+                HoaDon phieu = Mapper.map(phieuDto, HoaDon.class);
                 phieu.setBan(managedBan);
                 phieu.setNhanVien(managedNV);
                 phieu.setTrangThai(TRANG_THAI_CHUA_THANH_TOAN);
-                
-                // Generate standardized ID for new Invoice
                 phieu.setMaHoaDon(util.IdGenerator.generateHoaDonId());
 
-                em.persist(phieu); // Lưu hóa đơn trước
+                em.persist(phieu);
 
-                for (ChiTietHoaDon ct : cart) {
+                for (ChiTietHoaDonDTO ctDto : cartDto) {
+                    ChiTietHoaDon ct = Mapper.map(ctDto, ChiTietHoaDon.class);
                     ct.setHoaDon(phieu);
-                    ct.setId("CT" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+                    ct.setId(util.IdGenerator.generateChiTietHoaDonId());
                     if (ct.getDoUong() != null) {
                         ct.setDoUong(em.merge(ct.getDoUong()));
                     }
@@ -136,23 +150,22 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public boolean handlePayment(HoaDon hoaDon) {
+    public boolean handlePayment(HoaDonDTO hoaDonDto) {
         EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
 
-            // Tìm trực tiếp bằng ID thay vì merge object phức tạp từ client
-            HoaDon managed = em.find(HoaDon.class, hoaDon.getMaHoaDon());
+            HoaDon managed = em.find(HoaDon.class, hoaDonDto.getMaHoaDon());
             if (managed == null) {
                 tr.rollback();
                 return false;
             }
 
             managed.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
-            managed.setTongTien(hoaDon.getTongTien());
-            if (hoaDon.getNgayTao() != null)      managed.setNgayTao(hoaDon.getNgayTao());
-            if (hoaDon.getPhuongThucTT() != null) managed.setPhuongThucTT(hoaDon.getPhuongThucTT());
+            managed.setTongTien(hoaDonDto.getTongTien());
+            if (hoaDonDto.getNgayTao() != null)      managed.setNgayTao(hoaDonDto.getNgayTao());
+            if (hoaDonDto.getPhuongThucTT() != null) managed.setPhuongThucTT(hoaDonDto.getPhuongThucTT());
 
             Ban banToFree = em.find(Ban.class, managed.getBan().getMaBan());
             if (banToFree != null) {

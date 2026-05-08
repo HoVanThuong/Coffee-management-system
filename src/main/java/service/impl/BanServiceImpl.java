@@ -1,10 +1,13 @@
 package service.impl;
 
 import dao.BanDao;
+import dto.BanDTO;
 import entity.Ban;
+import mapper.Mapper;
 import service.BanService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BanServiceImpl implements BanService {
     private final BanDao banDao;
@@ -14,16 +17,19 @@ public class BanServiceImpl implements BanService {
     }
 
     @Override
-    public List<Ban> findAll() {
-        return banDao.findAll();
+    public List<BanDTO> findAll() {
+        return banDao.findAll().stream()
+                .map(b -> Mapper.map(b, BanDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Ban findById(String maBan) {
+    public BanDTO findById(String maBan) {
         if (maBan == null || maBan.trim().isEmpty()) {
             return null;
         }
-        return banDao.findById(maBan);
+        Ban b = banDao.findById(maBan);
+        return Mapper.map(b, BanDTO.class);
     }
 
     @Override
@@ -35,16 +41,19 @@ public class BanServiceImpl implements BanService {
 
         return banDao.updateTrangThaiBan(maBan, standardizedStatus);
     }
+
     @Override
-    public boolean addBan(Ban ban) {
-        if (ban == null || ban.getMaBan() == null) return false;
-        return banDao.insert(ban);
+    public boolean addBan(BanDTO banDto) {
+        if (banDto == null || banDto.getMaBan() == null) return false;
+        Ban b = Mapper.map(banDto, Ban.class);
+        return banDao.insert(b);
     }
 
     @Override
-    public boolean updateBan(Ban ban) {
-        if (ban == null || ban.getMaBan() == null) return false;
-        return banDao.update(ban);
+    public boolean updateBan(BanDTO banDto) {
+        if (banDto == null || banDto.getMaBan() == null) return false;
+        Ban b = Mapper.map(banDto, Ban.class);
+        return banDao.update(b);
     }
 
     @Override

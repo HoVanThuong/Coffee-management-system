@@ -1,6 +1,8 @@
 package dto;
+
 import lombok.*;
 import java.io.Serializable;
+import java.time.LocalDate;
 
 @Setter
 @Getter
@@ -15,4 +17,6 @@ public class NhanVienDTO implements Serializable {
     private String sdt;
     private String email;
     private String chucVu;
+    private LocalDate ngayVaoLam;
+    private LocalDate ngayThoiViec;
 }

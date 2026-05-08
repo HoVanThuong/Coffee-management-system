@@ -1,14 +1,15 @@
 package service;
 
-import entity.NhanVien;
+import dto.NhanVienDTO;
+import dto.TaiKhoanDTO;
 import java.util.List;
 
 public interface NhanVienService {
-    List<NhanVien> getAllEmployees(boolean includeFired);
-    boolean addEmployee(NhanVien nv);
-    boolean addEmployeeWithAccount(NhanVien nv, entity.TaiKhoan tk);
-    boolean updateEmployee(NhanVien nv);
-    boolean updateEmployeeWithAccount(NhanVien nv, entity.TaiKhoan tk);
+    List<NhanVienDTO> getAllEmployees(boolean includeFired);
+    boolean addEmployee(NhanVienDTO nvDto);
+    boolean addEmployeeWithAccount(NhanVienDTO nvDto, TaiKhoanDTO tkDto);
+    boolean updateEmployee(NhanVienDTO nvDto);
+    boolean updateEmployeeWithAccount(NhanVienDTO nvDto, TaiKhoanDTO tkDto);
     boolean deleteEmployee(String id);
     boolean terminateEmployee(String maNV);
 }

@@ -1,7 +1,7 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import entity.TaiKhoan;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -83,8 +83,7 @@ public class LoginFrame extends JFrame {
 
         JLabel lblTitle = new JLabel("ĐĂNG NHẬP");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 32));
-        lblTitle.setForeground(new Color(38, 50, 56)); // Dark gray
-        loginPanel.add(lblTitle, gbc);
+        lblTitle.setForeground(new Color(38, 50, 56));
 
         gbc.gridy++;
         gbc.gridwidth = 1;
@@ -175,7 +174,7 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        TaiKhoan tk = new TaiKhoan();
+        TaiKhoanDTO tk = new TaiKhoanDTO();
         tk.setTenDangNhap(username);
         tk.setMatKhau(password);
 
@@ -183,7 +182,7 @@ public class LoginFrame extends JFrame {
         Response res = client.sendRequest(req);
 
         if (res.isSuccess()) {
-            TaiKhoan loggedInTk = (TaiKhoan) res.getData();
+            TaiKhoanDTO loggedInTk = (TaiKhoanDTO) res.getData();
             JOptionPane.showMessageDialog(this,
                     "Đăng nhập thành công! Chào mừng " + loggedInTk.getNhanVien().getHoTen());
             this.dispose();

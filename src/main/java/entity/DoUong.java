@@ -12,6 +12,7 @@ package entity;
  * @version: 1.0
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -47,6 +48,7 @@ public class DoUong implements Serializable {
     private String loaiDoUong;
 
     // DoUong 1 --- * ChiTietHoaDon
+    @JsonIgnore
     @OneToMany(mappedBy = "doUong", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChiTietHoaDon> chiTietHoaDons;
 }

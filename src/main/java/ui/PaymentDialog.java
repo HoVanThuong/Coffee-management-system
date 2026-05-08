@@ -1,7 +1,6 @@
 package ui;
 
-import entity.ChiTietHoaDon;
-import entity.HoaDon;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -33,7 +32,7 @@ public class PaymentDialog extends JDialog {
 
     // ── Fields ─────────────────────────────────────────────────────
     private final Client client;
-    private final HoaDon hoaDon;
+    private final HoaDonDTO hoaDon;
     private final StaffDashboard parentFrame;
     private double finalAmount;
     private final DecimalFormat df = new DecimalFormat("#,##0");
@@ -54,7 +53,7 @@ public class PaymentDialog extends JDialog {
     private static final Color QR_BG = new Color(248, 250, 255);
     private static final Color QR_BORDER = new Color(200, 220, 255);
 
-    public PaymentDialog(StaffDashboard parent, Client client, HoaDon hoaDon) {
+    public PaymentDialog(StaffDashboard parent, Client client, HoaDonDTO hoaDon) {
         super(parent, "Xác nhận thanh toán", true);
         this.parentFrame = parent;
         this.client = client;
@@ -190,7 +189,7 @@ public class PaymentDialog extends JDialog {
                 return false;
             }
         };
-        for (ChiTietHoaDon ct : hoaDon.getChiTietHoaDons()) {
+        for (ChiTietHoaDonDTO ct : hoaDon.getChiTietHoaDons()) {
             model.addRow(new Object[] {
                     ct.getDoUong().getTenDoUong(),
                     ct.getSoLuong(),

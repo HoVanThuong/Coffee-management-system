@@ -1,7 +1,6 @@
 package ui.components;
 
-import entity.NhanVien;
-import entity.TaiKhoan;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -18,7 +17,7 @@ import java.awt.*;
 public class SettingsPanel extends JPanel {
 
     private final Client client;
-    private final TaiKhoan taiKhoan;
+    private final TaiKhoanDTO taiKhoan;
 
     // ── Palette (inherit from dashboards) ──────────────────────
     private static final Color C_PAGE_BG = new Color(246, 248, 252);
@@ -37,7 +36,7 @@ public class SettingsPanel extends JPanel {
     private static final Font F_LABEL = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Font F_FIELD = new Font("Segoe UI", Font.PLAIN, 14);
 
-    public SettingsPanel(Client client, TaiKhoan taiKhoan) {
+    public SettingsPanel(Client client, TaiKhoanDTO taiKhoan) {
         this.client = client;
         this.taiKhoan = taiKhoan;
         setLayout(new BorderLayout());
@@ -87,7 +86,7 @@ public class SettingsPanel extends JPanel {
     private JPanel buildInfoCard() {
         JPanel card = createCard("Thông Tin Cá Nhân");
 
-        NhanVien nv = taiKhoan.getNhanVien();
+        NhanVienDTO nv = taiKhoan.getNhanVien();
 
         JPanel grid = new JPanel(new GridBagLayout());
         grid.setOpaque(false);

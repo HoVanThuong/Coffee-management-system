@@ -7,10 +7,9 @@
     <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
     <!-- Liệt kê tất cả các entity -->
     <class>entity.Ban</class>
-    <class>entity.PhieuGoiMon</class>
-    <class>entity.ChiTietPhieuGoi</class>
     <class>entity.DoUong</class>
     <class>entity.HoaDon</class>
+    <class>entity.ChiTietHoaDon</class>
     <class>entity.NhanVien</class>
     <class>entity.TaiKhoan</class>
     <properties>

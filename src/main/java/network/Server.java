@@ -12,6 +12,9 @@ public class Server {
     private static final ExecutorService pool = Executors.newFixedThreadPool(20); // Multi-threading
 
     public static void main(String[] args) {
+        // Khởi chạy dịch vụ tìm kiếm server tự động
+        NetworkDiscovery.startServerDiscovery();
+
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Coffee Server is running on port " + PORT + "...");
             

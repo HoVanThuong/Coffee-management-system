@@ -42,6 +42,9 @@ public class TaiKhoan implements Serializable {
     @Column(name = "tai_khoan_quan_li")
     private boolean taiKhoanQuanLi;
 
+    @Column(name = "trang_thai")
+    private String trangThai;
+
     // TaiKhoan 1 --- 1 NhanVien (TaiKhoan giữ FK)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_nhan_vien", nullable = false, unique = true)

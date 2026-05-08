@@ -15,5 +15,6 @@ public class TaiKhoanDTO implements Serializable {
     private String tenDangNhap;
     private String matKhau;
     private boolean taiKhoanQuanLi;
+    private String trangThai;
     private NhanVienDTO nhanVien;
 }

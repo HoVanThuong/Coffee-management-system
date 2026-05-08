@@ -79,6 +79,11 @@ public class SimpleBarChart extends JPanel {
         this.hoverColor = color.darker();
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

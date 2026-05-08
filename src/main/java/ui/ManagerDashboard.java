@@ -208,42 +208,40 @@ public class ManagerDashboard extends JFrame {
         GridBagConstraints gbc = formGbc();
 
         JTextField txtMa = styledField();
-        JTextField txtViTri = styledField();
-        JComboBox<String> cbStatus = styledCombo(new String[] { "Trống", "Có khách" });
+        txtMa.setEditable(false);
+        txtMa.setForeground(C_TEXT_MUTED);
+
+        JComboBox<String> cbViTri = styledCombo(new String[] { "Lầu 1", "Lầu 2" });
+
+        JTextField txtStatus = styledField();
+        txtStatus.setEditable(false);
+        txtStatus.setForeground(C_TEXT_MUTED);
+
         if (existing != null) {
             txtMa.setText(existing.getMaBan());
-            txtMa.setEditable(false); // Không cho sửa ID
-            txtViTri.setText(existing.getViTri());
-            cbStatus.setSelectedItem(existing.getTrangThai());
+            cbViTri.setSelectedItem(existing.getViTri());
+            txtStatus.setText(existing.getTrangThai());
         } else {
-            // CHẾ ĐỘ THÊM: Tự động điền mã mới
-            txtMa.setText(generateNextTableId(model)); // Gọi hàm tự động tạo mã B0x
-            txtMa.setEditable(false); // Khóa lại không cho nhập đè
-            txtViTri.requestFocus(); // Con trỏ chuột nhảy xuống ô Vị trí
+            txtMa.setText(generateNextTableId(model));
+            txtStatus.setText("Trống");
         }
+
         addFormRow(form, gbc, 0, "Mã Bàn:", txtMa);
-        addFormRow(form, gbc, 1, "Vị Trí/Khu vực:", txtViTri);
-        addFormRow(form, gbc, 2, "Trạng Thái:", cbStatus);
+        addFormRow(form, gbc, 1, "Vị Trí/Khu vực:", cbViTri);
+        addFormRow(form, gbc, 2, "Trạng Thái:", txtStatus);
 
         JButton btnSave = mkButton("Lưu Dữ Liệu", C_ACCENT);
-        // Tìm đoạn này trong ManagerDashboard.java và thay thế:
         btnSave.addActionListener(e -> {
-            if (txtMa.getText().trim().isEmpty() || txtViTri.getText().trim().isEmpty()) {
-                warn("Vui lòng không để trống thông tin!");
-                return;
-            }
-
-            // THAY ĐỔI Ở ĐÂY: Dùng setter thay vì builder
             BanDTO b = new BanDTO();
             b.setMaBan(txtMa.getText().trim());
-            b.setViTri(txtViTri.getText().trim());
-            b.setTrangThai(cbStatus.getSelectedItem().toString());
+            b.setViTri(cbViTri.getSelectedItem().toString());
+            b.setTrangThai(txtStatus.getText().trim());
 
             CommandType cmd = (existing == null) ? CommandType.MANAGE_TABLE_ADD : CommandType.MANAGE_TABLE_UPDATE;
             try {
                 Response res = client.sendRequest(new Request(cmd, b));
                 if (res.isSuccess()) {
-                    info(res.getMessage()); // Hiển thị thông báo từ Server
+                    info(res.getMessage());
                     loadTableData(model);
                     dlg.dispose();
                 } else {
@@ -525,37 +523,81 @@ public class ManagerDashboard extends JFrame {
     // THỐNG KÊ (DASHBOARD)
     // ══════════════════════════════════════════════════════════
     private JPanel createDashboardPanel() {
-        JPanel page = buildPageShell("", "Dashboard", "Tổng quan hoạt động kinh doanh hôm nay");
+        JPanel page = buildPageShell("", "Dashboard", "Tổng quan hoạt động kinh doanh");
 
-        JPanel body = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
-        body.setBackground(C_PAGE_BG);
-        body.setBorder(new EmptyBorder(24, 32, 24, 32));
+        // Main content wrapper with ScrollPane for responsiveness
+        JPanel scrollContent = new JPanel();
+        scrollContent.setLayout(new BoxLayout(scrollContent, BoxLayout.Y_AXIS));
+        scrollContent.setBackground(C_PAGE_BG);
+        scrollContent.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        JPanel cardRev = createStatCard("Doanh thu hôm nay", "0 VNĐ", C_SUCCESS);
-        JPanel cardOrder = createStatCard("Hóa đơn hôm nay", "0", C_ACCENT);
+        // 1. Stat Cards Row
+        JPanel statsRow = new JPanel(new GridLayout(1, 3, 24, 0));
+        statsRow.setOpaque(false);
+        statsRow.setMaximumSize(new Dimension(1200, 140));
+
+        JPanel cardRev = createStatCard("Doanh thu", "0 VNĐ", C_SUCCESS);
+        JPanel cardOrder = createStatCard("Số lượng hóa đơn", "0", C_ACCENT);
         JPanel cardTable = createStatCard("Bàn đang phục vụ", "0", C_WARNING);
 
-        body.add(cardRev);
-        body.add(cardOrder);
-        body.add(cardTable);
+        statsRow.add(cardRev);
+        statsRow.add(cardOrder);
+        statsRow.add(cardTable);
+        
+        scrollContent.add(statsRow);
+        scrollContent.add(Box.createRigidArea(new Dimension(0, 32)));
 
-        SimpleBarChart chart = new SimpleBarChart("Doanh thu 7 ngày gần nhất (VNĐ)");
-        chart.setPreferredSize(new Dimension(880, 400));
-        chart.setBorder(new CompoundBorder(
+        // 2. Chart Section (Filter + Chart)
+        JPanel chartContainer = new JPanel(new BorderLayout(0, 16));
+        chartContainer.setBackground(Color.WHITE);
+        chartContainer.setBorder(new CompoundBorder(
                 new LineBorder(C_BORDER, 1, true),
-                new EmptyBorder(10, 10, 10, 10)));
+                new EmptyBorder(20, 24, 20, 24)));
+        chartContainer.setMaximumSize(new Dimension(1200, 500));
+
+        // Chart Header (Title + Filter)
+        JPanel chartHeader = new JPanel(new BorderLayout());
+        chartHeader.setOpaque(false);
+        
+        JLabel lblChartTitle = new JLabel("Phân tích dữ liệu");
+        lblChartTitle.setFont(F_SECTION);
+        lblChartTitle.setForeground(C_TEXT_PRIMARY);
+
+        JPanel filterGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        filterGroup.setOpaque(false);
+        JLabel lblF = new JLabel("Lọc theo:");
+        lblF.setFont(F_LABEL);
+        JComboBox<String> cbTime = styledCombo(new String[] { "Hôm nay", "7 Ngày qua", "Tháng này", "Năm này" });
+        filterGroup.add(lblF);
+        filterGroup.add(cbTime);
+
+        chartHeader.add(lblChartTitle, BorderLayout.WEST);
+        chartHeader.add(filterGroup, BorderLayout.EAST);
+
+        SimpleBarChart chart = new SimpleBarChart("Biểu đồ doanh thu");
+        chart.setPreferredSize(new Dimension(800, 350));
         chart.setBarColor(C_ACCENT);
-        body.add(chart);
 
-        loadDashboardData(cardRev, cardOrder, cardTable, chart);
+        chartContainer.add(chartHeader, BorderLayout.NORTH);
+        chartContainer.add(chart, BorderLayout.CENTER);
 
-        // Add refresh button for dashboard
+        scrollContent.add(chartContainer);
+
+        // Logic
+        loadDashboardData(cardRev, cardOrder, cardTable, chart, "Hôm nay");
+        cbTime.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
+
+        // Add refresh button for dashboard in topBar
         JPanel topBar = (JPanel) page.getComponent(0);
         JButton btnRef = mkButton("Làm Mới", C_ACCENT);
-        btnRef.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart));
+        btnRef.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
         topBar.add(btnRef, BorderLayout.EAST);
 
-        page.add(body, BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(scrollContent);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        
+        page.add(scroll, BorderLayout.CENTER);
         return page;
     }
 
@@ -582,60 +624,92 @@ public class ManagerDashboard extends JFrame {
         return card;
     }
 
-    private void loadDashboardData(JPanel cardRev, JPanel cardOrder, JPanel cardTable, SimpleBarChart chart) {
+    private void loadDashboardData(JPanel cardRev, JPanel cardOrder, JPanel cardTable, SimpleBarChart chart,
+            String filter) {
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
                 try {
+                    // 1. Table Stat (Always current)
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
-                        @SuppressWarnings("unchecked")
                         List<BanDTO> listBan = (List<BanDTO>) resTables.getData();
-                        // Đảm bảo điều kiện filter là "Có khách" (viết hoa chữ C)
-                        long activeTables = listBan.stream()
-                                .filter(b -> "Có khách".equals(b.getTrangThai()))
-                                .count();
+                        long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
                         SwingUtilities.invokeLater(() -> ((JLabel) cardTable.getClientProperty("valueLabel"))
                                 .setText(String.valueOf(activeTables)));
                     }
 
+                    // 2. Revenue & Orders
                     Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
                     if (resInvoices.isSuccess() && resInvoices.getData() != null) {
-                        @SuppressWarnings("unchecked")
                         List<HoaDonDTO> listHD = (List<HoaDonDTO>) resInvoices.getData();
-                        LocalDate today = LocalDate.now();
-                        long count = 0;
-                        double rev = 0;
-
+                        LocalDate now = LocalDate.now();
+                        double totalRev = 0;
+                        int totalOrders = 0;
                         Map<String, Double> chartData = new LinkedHashMap<>();
-                        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
-                        for (int i = 6; i >= 0; i--) {
-                            chartData.put(today.minusDays(i).format(fmt), 0.0);
-                        }
 
-                        for (HoaDonDTO hd : listHD) {
-                            if (hd.getNgayTao() != null) {
-                                // Chỉ tính các hóa đơn Đã thanh toán vào doanh thu
-                                boolean isPaid = "Đã thanh toán".equals(hd.getTrangThai());
-
-                                if (hd.getNgayTao().equals(today) && isPaid) {
-                                    count++;
-                                    rev += hd.getTongTien();
-                                }
-
-                                String dateStr = hd.getNgayTao().format(fmt);
-                                if (chartData.containsKey(dateStr) && isPaid) {
-                                    chartData.put(dateStr, chartData.get(dateStr) + hd.getTongTien());
+                        if ("Hôm nay".equals(filter)) {
+                            totalOrders = (int) listHD.stream()
+                                    .filter(h -> now.equals(h.getNgayTao()) && "Đã thanh toán".equals(h.getTrangThai()))
+                                    .count();
+                            totalRev = listHD.stream()
+                                    .filter(h -> now.equals(h.getNgayTao()) && "Đã thanh toán".equals(h.getTrangThai()))
+                                    .mapToDouble(HoaDonDTO::getTongTien).sum();
+                            chart.setTitle("Doanh thu hôm nay (VNĐ)");
+                            chartData.put(now.format(DateTimeFormatter.ofPattern("dd/MM")), totalRev);
+                        } else if ("7 Ngày qua".equals(filter)) {
+                            LocalDate sevenDaysAgo = now.minusDays(6);
+                            for (int i = 0; i < 7; i++)
+                                chartData.put(sevenDaysAgo.plusDays(i).format(DateTimeFormatter.ofPattern("dd/MM")),
+                                        0.0);
+                            for (HoaDonDTO h : listHD) {
+                                if (h.getNgayTao() != null && !h.getNgayTao().isBefore(sevenDaysAgo)
+                                        && "Đã thanh toán".equals(h.getTrangThai())) {
+                                    totalOrders++;
+                                    totalRev += h.getTongTien();
+                                    String key = h.getNgayTao().format(DateTimeFormatter.ofPattern("dd/MM"));
+                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
                                 }
                             }
+                            chart.setTitle("Biểu đồ doanh thu 7 ngày qua (VNĐ)");
+                        } else if ("Tháng này".equals(filter)) {
+                            int month = now.getMonthValue();
+                            int year = now.getYear();
+                            for (int i = 1; i <= now.getDayOfMonth(); i++)
+                                chartData.put(i + "/" + month, 0.0);
+                            for (HoaDonDTO h : listHD) {
+                                if (h.getNgayTao() != null && h.getNgayTao().getMonthValue() == month
+                                        && h.getNgayTao().getYear() == year
+                                        && "Đã thanh toán".equals(h.getTrangThai())) {
+                                    totalOrders++;
+                                    totalRev += h.getTongTien();
+                                    String key = h.getNgayTao().getDayOfMonth() + "/" + month;
+                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
+                                }
+                            }
+                            chart.setTitle("Biểu đồ doanh thu tháng " + month + " (VNĐ)");
+                        } else if ("Năm này".equals(filter)) {
+                            int year = now.getYear();
+                            for (int i = 1; i <= 12; i++)
+                                chartData.put("T" + i, 0.0);
+                            for (HoaDonDTO h : listHD) {
+                                if (h.getNgayTao() != null && h.getNgayTao().getYear() == year
+                                        && "Đã thanh toán".equals(h.getTrangThai())) {
+                                    totalOrders++;
+                                    totalRev += h.getTongTien();
+                                    String key = "T" + h.getNgayTao().getMonthValue();
+                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
+                                }
+                            }
+                            chart.setTitle("Biểu đồ doanh thu năm " + year + " (VNĐ)");
                         }
 
-                        final long fCount = count;
-                        final double fRev = rev;
+                        final double fRev = totalRev;
+                        final int fOrders = totalOrders;
                         SwingUtilities.invokeLater(() -> {
-                            ((JLabel) cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fCount));
                             ((JLabel) cardRev.getClientProperty("valueLabel"))
                                     .setText(String.format("%,.0f VNĐ", fRev));
+                            ((JLabel) cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fOrders));
                             chart.updateData(chartData);
                         });
                     }
@@ -781,14 +855,14 @@ public class ManagerDashboard extends JFrame {
         GridBagConstraints gbc = formGbc();
 
         JTextField txtMa = styledField();
+        txtMa.setEditable(false);
+        txtMa.setForeground(C_TEXT_MUTED);
         JTextField txtTen = styledField();
         JTextField txtGia = styledField();
         JComboBox<String> cbLoai = styledCombo(new String[] { "Cà phê", "Trà", "Sinh tố", "Nước ép", "Khác" });
 
         if (existing != null) {
             txtMa.setText(existing.getMaDoUong());
-            txtMa.setEditable(false);
-            txtMa.setForeground(C_TEXT_MUTED);
             txtTen.setText(existing.getTenDoUong());
             txtGia.setText(existing.getGiaTien());
             cbLoai.setSelectedItem(existing.getLoaiDoUong());
@@ -1044,7 +1118,7 @@ public class ManagerDashboard extends JFrame {
     }
 
     private void showEmployeeFormDialog(Object[] existingData, DefaultTableModel model, boolean chkState) {
-        JDialog dlg = buildDialog(existingData == null ? "Thêm Nhân Viên" : "Sửa Nhân Viên", 440, 460);
+        JDialog dlg = buildDialog(existingData == null ? "Thêm Nhân Viên" : "Sửa Nhân Viên", 440, 420);
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(C_CARD_BG);
@@ -1052,12 +1126,12 @@ public class ManagerDashboard extends JFrame {
         GridBagConstraints gbc = formGbc();
 
         JTextField txtMaNV = styledField();
+        txtMaNV.setEditable(false);
+        txtMaNV.setForeground(C_TEXT_MUTED);
         JTextField txtHoTen = styledField();
         JTextField txtSdt = styledField();
-        JComboBox<String> cbChucVu = styledCombo(new String[] { "Staff", "Manager" });
-        JTextField txtUser = styledField();
-        JPasswordField txtPass = new JPasswordField();
-        styleField(txtPass);
+        JComboBox<String> cbChucVu = styledCombo(new String[] { "Nhân viên", "Quản lý" });
+
         JCheckBox chkMgr = new JCheckBox("Tài khoản Quản lý");
         chkMgr.setFont(F_BODY);
         chkMgr.setOpaque(false);
@@ -1067,23 +1141,15 @@ public class ManagerDashboard extends JFrame {
             NhanVienDTO nv = (NhanVienDTO) existingData[0];
             TaiKhoanDTO tk = (TaiKhoanDTO) existingData[1];
             txtMaNV.setText(nv.getMaNhanVien());
-            txtMaNV.setEditable(false);
-            txtMaNV.setForeground(C_TEXT_MUTED);
             txtHoTen.setText(nv.getHoTen());
             txtSdt.setText(nv.getSdt());
             cbChucVu.setSelectedItem(nv.getChucVu());
-            txtUser.setText(tk.getTenDangNhap());
             chkMgr.setSelected(tk.isTaiKhoanQuanLi());
         } else {
-            // Fetch real IDs from server
             try {
                 Response resNV = client.sendRequest(new Request(CommandType.GENERATE_ID, "NHAN_VIEN"));
                 if (resNV.isSuccess())
                     txtMaNV.setText((String) resNV.getData());
-
-                Response resTK = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
-                if (resTK.isSuccess())
-                    txtUser.setText(((String) resTK.getData()).toLowerCase()); // Default username
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -1093,46 +1159,62 @@ public class ManagerDashboard extends JFrame {
         addFormRow(form, gbc, 1, "Họ Tên", txtHoTen);
         addFormRow(form, gbc, 2, "Số Điện Thoại", txtSdt);
         addFormRow(form, gbc, 3, "Chức Vụ", cbChucVu);
-        addFormRow(form, gbc, 4, "Tên Đăng Nhập", txtUser);
-        addFormRow(form, gbc, 5, "Mật Khẩu", txtPass);
-        addFormRow(form, gbc, 6, "Quyền", chkMgr);
+        addFormRow(form, gbc, 4, "Quyền", chkMgr);
+
+        // Note label
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 0, 10, 0);
+        JLabel lblNote = new JLabel("<html><i>* Ghi chú: Tài khoản mặc định là SĐT, mật khẩu: 123</i></html>");
+        lblNote.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblNote.setForeground(C_ACCENT);
+        form.add(lblNote, gbc);
 
         JButton btnSave = mkButton("Lưu thông tin", C_ACCENT);
         btnSave.addActionListener(e -> {
+            if (txtHoTen.getText().trim().isEmpty() || txtSdt.getText().trim().isEmpty()) {
+                warn("Vui lòng điền đầy đủ Họ tên và SĐT!");
+                return;
+            }
+
             NhanVienDTO nv = new NhanVienDTO();
             nv.setMaNhanVien(txtMaNV.getText());
-            nv.setHoTen(txtHoTen.getText());
-            nv.setSdt(txtSdt.getText());
+            nv.setHoTen(txtHoTen.getText().trim());
+            nv.setSdt(txtSdt.getText().trim());
             nv.setChucVu((String) cbChucVu.getSelectedItem());
             if (existingData == null)
                 nv.setNgayVaoLam(LocalDate.now());
+
             TaiKhoanDTO tk = new TaiKhoanDTO();
-            if (existingData == null) {
+            if (existingData != null) {
+                tk.setMaTaiKhoan(((TaiKhoanDTO) existingData[1]).getMaTaiKhoan());
+            } else {
                 try {
-                    Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
-                    if (res.isSuccess())
-                        tk.setMaTaiKhoan((String) res.getData());
+                    Response resTK = client.sendRequest(new Request(CommandType.GENERATE_ID, "TAI_KHOAN"));
+                    if (resTK.isSuccess())
+                        tk.setMaTaiKhoan((String) resTK.getData());
                     else
                         tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000);
                 } catch (Exception ex) {
                     tk.setMaTaiKhoan("TK" + System.currentTimeMillis() % 100000);
                 }
-            } else {
-                tk.setMaTaiKhoan(((TaiKhoanDTO) existingData[1]).getMaTaiKhoan());
             }
-            tk.setTenDangNhap(txtUser.getText());
-            tk.setMatKhau(new String(txtPass.getPassword()));
+            tk.setTenDangNhap(nv.getSdt()); // Username là SDT
+            tk.setMatKhau("123"); // Mật khẩu mặc định
             tk.setTaiKhoanQuanLi(chkMgr.isSelected());
-            CommandType cmd = existingData == null ? CommandType.MANAGE_EMPLOYEE_ADD
+
+            CommandType cmd = (existingData == null) ? CommandType.MANAGE_EMPLOYEE_ADD
                     : CommandType.MANAGE_EMPLOYEE_UPDATE;
             try {
                 Response res = client.sendRequest(new Request(cmd, new Object[] { nv, tk }));
                 if (res.isSuccess()) {
-                    JOptionPane.showMessageDialog(dlg, "Thành công!");
+                    info("Lưu nhân viên thành công!");
                     loadEmployeeData(model, chkState);
                     dlg.dispose();
-                } else
-                    JOptionPane.showMessageDialog(dlg, res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    err(res.getMessage());
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }

@@ -11,6 +11,7 @@ import java.util.List;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
+    private String currentAccountId;
 
     private final HoaDonService hoaDonService = new HoaDonServiceImpl();
     private final BanService banService = new BanServiceImpl(new dao.impl.BanDaoImpl());
@@ -36,6 +37,16 @@ public class ClientHandler implements Runnable {
             }
         } catch (Exception e) {
             System.out.println("Client disconnected: " + e.getMessage());
+        } finally {
+            if (currentAccountId != null) {
+                System.out.println("Cleaning up session for account: " + currentAccountId);
+                taiKhoanService.updateStatus(currentAccountId, "Offline");
+            }
+            try {
+                if (socket != null && !socket.isClosed()) socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -51,9 +62,16 @@ public class ClientHandler implements Runnable {
                         TaiKhoanDTO result = taiKhoanService.login(loginDto.getTenDangNhap(), loginDto.getMatKhau());
                         
                         if (result != null) {
-                            System.out.println("Server: Login success for " + loginDto.getTenDangNhap());
-                            response.setSuccess(true);
-                            response.setData(result);
+                            if ("ALREADY_LOGGED_IN".equals(result.getMaTaiKhoan())) {
+                                System.out.println("Server: Login blocked - already logged in: " + loginDto.getTenDangNhap());
+                                response.setSuccess(false);
+                                response.setMessage("Tài khoản này đang được đăng nhập ở một nơi khác!");
+                            } else {
+                                System.out.println("Server: Login success for " + loginDto.getTenDangNhap());
+                                this.currentAccountId = result.getMaTaiKhoan();
+                                response.setSuccess(true);
+                                response.setData(result);
+                            }
                         } else {
                             System.out.println("Server: Login failed for " + loginDto.getTenDangNhap());
                             response.setSuccess(false);

@@ -21,11 +21,22 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         if (tk != null) {
             System.out.println("User found. Checking password...");
             if (tk.getMatKhau().equals(password)) {
+                // Check if already logged in
+                if ("Đang online".equals(tk.getTrangThai())) {
+                    System.out.println("Login failed: Account already logged in elsewhere.");
+                    return TaiKhoanDTO.builder().maTaiKhoan("ALREADY_LOGGED_IN").build();
+                }
+
                 // Check if employee is still working
                 if (tk.getNhanVien() != null && tk.getNhanVien().getNgayThoiViec() != null) {
                     System.out.println("Login failed: Employee terminated.");
                     return null;
                 }
+
+                // Set status to online
+                tk.setTrangThai("Đang online");
+                taiKhoanDao.update(tk);
+
                 System.out.println("Password match. Login success.");
                 return Mapper.map(tk, TaiKhoanDTO.class);
             } else {
@@ -45,5 +56,14 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
             return taiKhoanDao.update(tk);
         }
         return false;
+    }
+
+    @Override
+    public void updateStatus(String maTaiKhoan, String status) {
+        TaiKhoan tk = taiKhoanDao.findById(maTaiKhoan);
+        if (tk != null) {
+            tk.setTrangThai(status);
+            taiKhoanDao.update(tk);
+        }
     }
 }

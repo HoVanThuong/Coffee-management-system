@@ -84,6 +84,7 @@ public class LoginFrame extends JFrame {
         JLabel lblTitle = new JLabel("ĐĂNG NHẬP");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 32));
         lblTitle.setForeground(new Color(38, 50, 56));
+        loginPanel.add(lblTitle, gbc);
 
         gbc.gridy++;
         gbc.gridwidth = 1;

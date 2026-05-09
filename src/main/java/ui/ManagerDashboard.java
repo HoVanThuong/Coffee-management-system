@@ -38,6 +38,7 @@ public class ManagerDashboard extends JFrame {
     private JPanel mainContentPanel;
     private JButton activeNavButton = null;
     private List<HoaDonDTO> currentInvoices;
+    private List<NhanVienDTO> currentEmployees;
 
     // ── Palette ──────────────────────────────────────────────
     private static final Color C_SIDEBAR_BG = new Color(15, 17, 23); // near-black
@@ -1092,15 +1093,15 @@ public class ManagerDashboard extends JFrame {
             @Override
             public void onEdit(int row) {
                 int modelRow = empTable.convertRowIndexToModel(row);
-                String maNV = (String) empModel.getValueAt(modelRow, 0);
-                NhanVienDTO nv = new NhanVienDTO();
-                nv.setMaNhanVien(maNV);
-                nv.setHoTen((String) empModel.getValueAt(modelRow, 1));
-                nv.setSdt((String) empModel.getValueAt(modelRow, 2));
-                nv.setChucVu((String) empModel.getValueAt(modelRow, 3));
+                if (currentEmployees == null || modelRow >= currentEmployees.size()) return;
+                
+                NhanVienDTO nv = currentEmployees.get(modelRow);
                 TaiKhoanDTO tk = new TaiKhoanDTO();
-                tk.setTenDangNhap(maNV + "_user");
-                tk.setTaiKhoanQuanLi("Manager".equals(nv.getChucVu()));
+                // Username is SDT as per save logic
+                tk.setTenDangNhap(nv.getSdt());
+                // ChucVu is "Quản lý" in Vietnamese
+                tk.setTaiKhoanQuanLi("Quản lý".equals(nv.getChucVu()));
+                
                 showEmployeeFormDialog(new Object[] { nv, tk }, empModel, toggleFired.isSelected());
             }
 
@@ -1150,6 +1151,7 @@ public class ManagerDashboard extends JFrame {
             if (res.isSuccess() && res.getData() != null) {
                 @SuppressWarnings("unchecked")
                 List<NhanVienDTO> list = (List<NhanVienDTO>) res.getData();
+                currentEmployees = list;
                 for (NhanVienDTO n : list) {
                     model.addRow(new Object[] {
                             n.getMaNhanVien(), n.getHoTen(), n.getSdt(), n.getChucVu(),
@@ -1226,12 +1228,18 @@ public class ManagerDashboard extends JFrame {
             }
 
             NhanVienDTO nv = new NhanVienDTO();
+            if (existingData != null) {
+                NhanVienDTO old = (NhanVienDTO) existingData[0];
+                nv.setNgayVaoLam(old.getNgayVaoLam());
+                nv.setNgayThoiViec(old.getNgayThoiViec());
+                nv.setEmail(old.getEmail());
+            } else {
+                nv.setNgayVaoLam(LocalDate.now());
+            }
             nv.setMaNhanVien(txtMaNV.getText());
             nv.setHoTen(txtHoTen.getText().trim());
             nv.setSdt(txtSdt.getText().trim());
             nv.setChucVu((String) cbChucVu.getSelectedItem());
-            if (existingData == null)
-                nv.setNgayVaoLam(LocalDate.now());
 
             TaiKhoanDTO tk = new TaiKhoanDTO();
             if (existingData != null) {

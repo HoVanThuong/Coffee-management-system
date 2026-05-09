@@ -127,8 +127,8 @@ public class NhanVienDaoImpl implements NhanVienDao {
                 dbEmp.setSdt(nv.getSdt());
                 dbEmp.setEmail(nv.getEmail());
                 dbEmp.setNgaySinh(nv.getNgaySinh());
-                dbEmp.setNgayVaoLam(nv.getNgayVaoLam());
-                dbEmp.setNgayThoiViec(nv.getNgayThoiViec());
+                if (nv.getNgayVaoLam() != null) dbEmp.setNgayVaoLam(nv.getNgayVaoLam());
+                if (nv.getNgayThoiViec() != null) dbEmp.setNgayThoiViec(nv.getNgayThoiViec());
                 dbEmp.setChucVu(nv.getChucVu());
                 em.merge(dbEmp);
 

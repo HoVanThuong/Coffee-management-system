@@ -30,6 +30,7 @@ public class StaffDashboard extends JFrame {
     private JButton activeNavButton = null;
     private JPanel gridTableContainer; // kept for compat
     private JTabbedPane tableTabs;
+    private JButton btnRefreshDashboard;
 
     // ── Palette (Thống nhất với Manager) ──────────────────────────
     private static final Color C_SIDEBAR_BG = new Color(15, 17, 23);
@@ -257,10 +258,18 @@ public class StaffDashboard extends JFrame {
                 e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
 
         // Add refresh button for dashboard in header
-        JButton btnRef = mkButton("Làm Mới", C_ACCENT);
-        btnRef.addActionListener(
+        btnRefreshDashboard = mkButton("Làm Mới", C_ACCENT);
+        btnRefreshDashboard.addActionListener(
                 e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
-        header.add(btnRef, BorderLayout.EAST);
+        header.add(btnRefreshDashboard, BorderLayout.EAST);
+
+        // Tự động làm mới dữ liệu mỗi 10 giây
+        Timer autoRefreshTimer = new Timer(10000, e -> {
+            if (page.isShowing()) {
+                loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem());
+            }
+        });
+        autoRefreshTimer.start();
 
         JScrollPane scroll = new JScrollPane(scrollContent);
         scroll.setBorder(null);
@@ -571,6 +580,9 @@ public class StaffDashboard extends JFrame {
 
     public void showTablesView() {
         loadTableData();
+        if (btnRefreshDashboard != null) {
+            btnRefreshDashboard.doClick(); // Ép hệ thống lấy lại dữ liệu Dashboard ngầm ngay lập tức
+        }
         cardLayout.show(mainContentPanel, "TABLE_MAP");
     }
 

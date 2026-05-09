@@ -593,6 +593,14 @@ public class ManagerDashboard extends JFrame {
         btnRef.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
         topBar.add(btnRef, BorderLayout.EAST);
 
+        // Tự động làm mới dữ liệu mỗi 10 giây
+        Timer autoRefreshTimer = new Timer(10000, e -> {
+            if (page.isShowing()) {
+                loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem());
+            }
+        });
+        autoRefreshTimer.start();
+
         JScrollPane scroll = new JScrollPane(scrollContent);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);

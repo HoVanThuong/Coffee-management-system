@@ -3,18 +3,20 @@ package dto;
 import lombok.*;
 import java.io.Serializable;
 
-@Setter
+/**
+ * DTO thống kê doanh thu của từng loại đồ uống
+ */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DoUongDTO implements Serializable {
+public class ThongKeDoUongDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String maDoUong;
     private String tenDoUong;
-    private String moTaDoUong;
-    private String giaTien;
     private String loaiDoUong;
-    private byte[] hinhAnh;
+    private int soLuongDaBan;
+    private double doanhThu;
 }

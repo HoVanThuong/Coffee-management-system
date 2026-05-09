@@ -1,13 +1,12 @@
 package service;
 
 import dto.DoUongDTO;
-import entity.DoUong;
 import java.util.List;
 
 public interface DoUongService {
-    List<DoUong> getAllDrinks();
-    boolean addDrink(DoUong du);
-    boolean updateDrink(DoUong du);
+    List<DoUongDTO> getAllDrinks();
+    boolean addDrink(DoUongDTO duDto);
+    boolean updateDrink(DoUongDTO duDto);
     boolean deleteDrink(String id);
-    DoUong findDrinkById(String id);
+    DoUongDTO findDrinkById(String id);
 }

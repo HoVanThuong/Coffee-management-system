@@ -1,15 +1,16 @@
 package service;
 
-import entity.ChiTietHoaDon;
-import entity.HoaDon;
+import dto.ChiTietHoaDonDTO;
+import dto.HoaDonDTO;
 import java.util.List;
 
 public interface HoaDonService {
-    List<HoaDon> getAllInvoices();
-    boolean createInvoice(HoaDon hd);
-    List<HoaDon> getInvoicesByDate(java.time.LocalDate date);
-    List<HoaDon> findInvoicesByDateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate);
-    HoaDon getActiveOrderForTable(String maBan);
-    boolean handleOrderFood(HoaDon phieu, List<ChiTietHoaDon> cart);
-    boolean handlePayment(HoaDon hoaDon);
+    List<HoaDonDTO> getAllInvoices();
+    boolean createInvoice(HoaDonDTO hdDto);
+    List<HoaDonDTO> getInvoicesByDate(java.time.LocalDate date);
+    List<HoaDonDTO> findInvoicesByDateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate);
+    HoaDonDTO getActiveOrderForTable(String maBan);
+    boolean handleOrderFood(HoaDonDTO phieuDto, List<ChiTietHoaDonDTO> cartDto);
+    boolean handlePayment(HoaDonDTO hoaDonDto);
+    dto.ThongKeDTO getThongKe(java.time.LocalDate fromDate, java.time.LocalDate toDate);
 }

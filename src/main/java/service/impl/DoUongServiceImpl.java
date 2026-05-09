@@ -7,26 +7,30 @@ import entity.DoUong;
 import mapper.Mapper;
 import service.DoUongService;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DoUongServiceImpl implements DoUongService {
     private DoUongDao doUongDao = new DoUongDaoImpl();
 
     @Override
-    public List<DoUong> getAllDrinks() {
-        return doUongDao.findAll();
+    public List<DoUongDTO> getAllDrinks() {
+        return doUongDao.findAll().stream()
+                .map(d -> Mapper.map(d, DoUongDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public boolean addDrink(DoUong du) {
-
-        if (Double.parseDouble(du.getGiaTien()) < 0) {
+    public boolean addDrink(DoUongDTO duDto) {
+        if (Double.parseDouble(duDto.getGiaTien()) < 0) {
             return false;
         }
+        DoUong du = Mapper.map(duDto, DoUong.class);
         return doUongDao.insert(du);
     }
 
     @Override
-    public boolean updateDrink(DoUong du) {
+    public boolean updateDrink(DoUongDTO duDto) {
+        DoUong du = Mapper.map(duDto, DoUong.class);
         return doUongDao.update(du);
     }
 
@@ -36,7 +40,8 @@ public class DoUongServiceImpl implements DoUongService {
     }
 
     @Override
-    public DoUong findDrinkById(String id) {
-        return doUongDao.findById(id);
+    public DoUongDTO findDrinkById(String id) {
+        DoUong du = doUongDao.findById(id);
+        return Mapper.map(du, DoUongDTO.class);
     }
 }

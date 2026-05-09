@@ -12,6 +12,7 @@ package entity;
  * @version: 1.0
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,6 +42,7 @@ public class Ban implements Serializable {
     private String viTri;
 
     // Ban 1 --- * HoaDon
+    @JsonIgnore
     @OneToMany(mappedBy = "ban", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HoaDon> hoaDons;
 }

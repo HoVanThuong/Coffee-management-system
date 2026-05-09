@@ -12,6 +12,7 @@ package entity;
  * @version: 1.0
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,6 +41,7 @@ public class ChiTietHoaDon implements Serializable {
     private Double donGia;
 
     // ChiTietHoaDon * --- 1 HoaDon
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_hoa_don", nullable = false)
     private HoaDon hoaDon;

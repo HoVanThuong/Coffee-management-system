@@ -1,6 +1,6 @@
 package ui;
 
-import entity.*;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -17,13 +17,13 @@ import java.util.List;
 
 public class OrderPanel extends JPanel {
     private final Client client;
-    private final TaiKhoan currentUser;
-    private final Ban ban;
+    private final TaiKhoanDTO currentUser;
+    private final BanDTO ban;
     private final StaffDashboard parentFrame;
-    private HoaDon activeOrder;
-    private List<ChiTietHoaDon> existingCart = new ArrayList<>();
-    private List<ChiTietHoaDon> newCart = new ArrayList<>();
-    private List<DoUong> allMenuItems = new ArrayList<>();
+    private HoaDonDTO activeOrder;
+    private List<ChiTietHoaDonDTO> existingCart = new ArrayList<>();
+    private List<ChiTietHoaDonDTO> newCart = new ArrayList<>();
+    private List<DoUongDTO> allMenuItems = new ArrayList<>();
     private JTextField txtSearch;
     private JComboBox<String> cbCategory;
 
@@ -42,7 +42,7 @@ public class OrderPanel extends JPanel {
     private final Color SUCCESS_GREEN = new Color(46, 204, 113);
     private final Color TEXT_DARK = new Color(30, 30, 40);
 
-    public OrderPanel(Client client, TaiKhoan currentUser, Ban ban, StaffDashboard parent) {
+    public OrderPanel(Client client, TaiKhoanDTO currentUser, BanDTO ban, StaffDashboard parent) {
         this.client = client;
         this.currentUser = currentUser;
         this.ban = ban;
@@ -127,7 +127,7 @@ public class OrderPanel extends JPanel {
 
         panel.add(topPanel, BorderLayout.NORTH);
 
-        menuGrid = new JPanel(new GridLayout(0, 3, 15, 15));
+        menuGrid = new JPanel(new ui.components.WrapLayout(FlowLayout.LEFT, 15, 15));
         menuGrid.setBackground(BG_LIGHT);
 
         JScrollPane scroll = new JScrollPane(menuGrid);
@@ -144,7 +144,7 @@ public class OrderPanel extends JPanel {
         if (category == null) category = "Tất cả";
         
         menuGrid.removeAll();
-        for (DoUong item : allMenuItems) {
+        for (DoUongDTO item : allMenuItems) {
             boolean matchKeyword = item.getTenDoUong().toLowerCase().contains(keyword);
             boolean matchCategory = "Tất cả".equals(category) || (item.getLoaiDoUong() != null && item.getLoaiDoUong().equals(category));
             
@@ -226,6 +226,7 @@ public class OrderPanel extends JPanel {
 
         btnPay = createStyledButton("THANH TOÁN", ACCENT_BLUE);
         btnPay.addActionListener(e -> handlePayment());
+        btnPay.setVisible(false); // Initially hide
 
         btnGroup.add(btnConfirm);
         btnGroup.add(btnPay);
@@ -285,7 +286,7 @@ public class OrderPanel extends JPanel {
 
     private void changeQuantityByRow(int row, int delta) {
         if (row >= 0 && row < newCart.size()) {
-            ChiTietHoaDon ct = newCart.get(row);
+            ChiTietHoaDonDTO ct = newCart.get(row);
             int newQty = ct.getSoLuong() + delta;
             if (newQty > 0) {
                 ct.setSoLuong(newQty);
@@ -374,12 +375,14 @@ public class OrderPanel extends JPanel {
         try {
             Response response = client.sendRequest(new Request(CommandType.GET_MENU, null));
             if (response.isSuccess()) {
-                allMenuItems = (List<DoUong>) response.getData();
+                @SuppressWarnings("unchecked")
+                List<DoUongDTO> list = (List<DoUongDTO>) response.getData();
+                allMenuItems = list;
                 
                 cbCategory.removeAllItems();
                 cbCategory.addItem("Tất cả");
                 List<String> categories = new ArrayList<>();
-                for (DoUong item : allMenuItems) {
+                for (DoUongDTO item : allMenuItems) {
                     String cat = item.getLoaiDoUong();
                     if (cat != null && !cat.trim().isEmpty() && !categories.contains(cat)) {
                         categories.add(cat);
@@ -392,8 +395,9 @@ public class OrderPanel extends JPanel {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    private JPanel createDrinkCard(DoUong drink) {
+    private JPanel createDrinkCard(DoUongDTO drink) {
         JPanel card = new JPanel(new BorderLayout(0, 5));
+        card.setPreferredSize(new Dimension(180, 200));
         card.setBackground(Color.WHITE);
         card.setBorder(new LineBorder(new Color(230, 230, 235), 1, true));
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -407,10 +411,16 @@ public class OrderPanel extends JPanel {
         lblPrice.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblPrice.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-        // Placeholder Icon
-        JLabel lblIcon = new JLabel("☕");
-        lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
-        lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
+        // Image or Placeholder Icon
+        JLabel lblIcon = new JLabel("", SwingConstants.CENTER);
+        if (drink.getHinhAnh() != null && drink.getHinhAnh().length > 0) {
+            ImageIcon icon = new ImageIcon(drink.getHinhAnh());
+            Image scaled = icon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+            lblIcon.setIcon(new ImageIcon(scaled));
+        } else {
+            lblIcon.setText("☕");
+            lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
+        }
 
         card.add(lblName, BorderLayout.NORTH);
         card.add(lblIcon, BorderLayout.CENTER);
@@ -425,15 +435,15 @@ public class OrderPanel extends JPanel {
         return card;
     }
 
-    private void addToCart(DoUong drink) {
-        for (ChiTietHoaDon ct : newCart) {
+    private void addToCart(DoUongDTO drink) {
+        for (ChiTietHoaDonDTO ct : newCart) {
             if (ct.getDoUong().getMaDoUong().equals(drink.getMaDoUong())) {
                 ct.setSoLuong(ct.getSoLuong() + 1);
                 updateCartTable();
                 return;
             }
         }
-        ChiTietHoaDon newCt = new ChiTietHoaDon();
+        ChiTietHoaDonDTO newCt = new ChiTietHoaDonDTO();
         newCt.setDoUong(drink);
         newCt.setSoLuong(1);
         newCt.setDonGia(Double.parseDouble(drink.getGiaTien()));
@@ -446,7 +456,7 @@ public class OrderPanel extends JPanel {
         newCartModel.setRowCount(0);
         double total = 0;
         
-        for (ChiTietHoaDon ct : existingCart) {
+        for (ChiTietHoaDonDTO ct : existingCart) {
             double lineTotal = ct.getSoLuong() * ct.getDonGia();
             existingCartModel.addRow(new Object[]{
                     ct.getDoUong().getTenDoUong(),
@@ -456,7 +466,7 @@ public class OrderPanel extends JPanel {
             total += lineTotal;
         }
 
-        for (ChiTietHoaDon ct : newCart) {
+        for (ChiTietHoaDonDTO ct : newCart) {
             double lineTotal = ct.getSoLuong() * ct.getDonGia();
             newCartModel.addRow(new Object[]{
                     ct.getDoUong().getTenDoUong(),
@@ -468,25 +478,30 @@ public class OrderPanel extends JPanel {
         }
 
         lblTotal.setText(df.format(total) + " VND");
-        btnPay.setVisible(activeOrder != null);
-        btnPay.setEnabled(newCart.isEmpty());
+        // Only show payment button if we have a confirmed order and NO pending new items
+        boolean hasExistingOrder = activeOrder != null;
+        boolean hasPendingChanges = !newCart.isEmpty();
+        
+        btnPay.setVisible(hasExistingOrder && !hasPendingChanges);
+        btnPay.setEnabled(hasExistingOrder && !hasPendingChanges);
     }
 
     // Giữ nguyên logic loadData, loadActiveOrder, confirmOrder và handlePayment từ code gốc của bạn
     private void loadData() { loadMenu(); loadActiveOrder(); }
 
     private void loadActiveOrder() {
+        activeOrder = null; // Reset
         try {
             Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
             if (response.isSuccess() && response.getData() != null) {
-                activeOrder = (HoaDon) response.getData();
+                activeOrder = (HoaDonDTO) response.getData();
                 
                 // Gộp các món trùng lặp từ server (nếu DB đang có dữ liệu cũ bị trùng)
                 existingCart.clear();
                 if (activeOrder.getChiTietHoaDons() != null) {
-                    for (ChiTietHoaDon ct : activeOrder.getChiTietHoaDons()) {
+                    for (ChiTietHoaDonDTO ct : activeOrder.getChiTietHoaDons()) {
                         boolean found = false;
-                        for (ChiTietHoaDon existing : existingCart) {
+                        for (ChiTietHoaDonDTO existing : existingCart) {
                             if (existing.getDoUong().getMaDoUong().equals(ct.getDoUong().getMaDoUong())) {
                                 existing.setSoLuong(existing.getSoLuong() + ct.getSoLuong());
                                 found = true;
@@ -500,9 +515,13 @@ public class OrderPanel extends JPanel {
                 }
                 
                 newCart.clear();
-                updateCartTable();
             }
-        } catch (Exception e) { e.printStackTrace(); }
+            // Always update table to reflect the null/non-null state of activeOrder
+            updateCartTable();
+        } catch (Exception e) {
+            e.printStackTrace();
+            updateCartTable();
+        }
     }
 
      private void confirmOrder() {
@@ -524,11 +543,11 @@ public class OrderPanel extends JPanel {
         if (confirm != JOptionPane.YES_OPTION) return;
         
         double total = 0;
-        for (ChiTietHoaDon ct : existingCart) total += ct.getSoLuong() * ct.getDonGia();
-        for (ChiTietHoaDon ct : newCart) total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDonDTO ct : existingCart) total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDonDTO ct : newCart) total += ct.getSoLuong() * ct.getDonGia();
 
         if (activeOrder == null) {
-            activeOrder = new HoaDon();
+            activeOrder = new HoaDonDTO();
             // Fetch standardized ID from server
             try {
                 Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "HOA_DON"));
@@ -542,9 +561,9 @@ public class OrderPanel extends JPanel {
         activeOrder.setTongTien(total);
         activeOrder.setNgayTao(java.time.LocalDate.now());
 
-        List<ChiTietHoaDon> itemsToSend = new ArrayList<>();
-        for (ChiTietHoaDon item : newCart) {
-            ChiTietHoaDon cleanItem = new ChiTietHoaDon();
+        List<ChiTietHoaDonDTO> itemsToSend = new ArrayList<>();
+        for (ChiTietHoaDonDTO item : newCart) {
+            ChiTietHoaDonDTO cleanItem = new ChiTietHoaDonDTO();
             cleanItem.setId(null);
             cleanItem.setSoLuong(item.getSoLuong());
             cleanItem.setDonGia(item.getDonGia());

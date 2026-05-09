@@ -3,6 +3,7 @@ package mapper;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.hibernate6.Hibernate6Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class Mapper {
@@ -12,6 +13,7 @@ public class Mapper {
     static {
         objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
+                .registerModule(new Hibernate6Module())
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 

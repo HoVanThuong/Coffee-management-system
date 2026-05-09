@@ -1,8 +1,6 @@
 package ui;
 
-import entity.ChiTietHoaDon;
-import entity.HoaDon;
-import entity.NhanVien;
+import dto.*;
 import network.Client;
 import network.CommandType;
 import network.Request;
@@ -23,7 +21,7 @@ public class ReceiptDialog extends JDialog {
     private static final String SHOP_PHONE = "0909 123 456";
 
     private final Client client;
-    private final HoaDon hoaDon;
+    private final HoaDonDTO hoaDon;
     private final double finalAmount;
     private String employeeName = "—";
     private final DecimalFormat df = new DecimalFormat("#,##0");
@@ -37,7 +35,7 @@ public class ReceiptDialog extends JDialog {
     private static final Color C_SUCCESS = new Color(39, 174, 96);
     private static final Color C_DASH = new Color(200, 200, 210);
 
-    public ReceiptDialog(Window parent, Client client, HoaDon hoaDon, double finalAmount) {
+    public ReceiptDialog(Window parent, Client client, HoaDonDTO hoaDon, double finalAmount) {
         super(parent, "Hóa Đơn Thanh Toán", ModalityType.APPLICATION_MODAL);
         this.client = client;
         this.hoaDon = hoaDon;
@@ -143,7 +141,7 @@ public class ReceiptDialog extends JDialog {
         headerCell(p, "Đơn giá");
         headerCell(p, "T.Tiền");
 
-        for (ChiTietHoaDon ct : hoaDon.getChiTietHoaDons()) {
+        for (ChiTietHoaDonDTO ct : hoaDon.getChiTietHoaDons()) {
             String name = ct.getDoUong().getTenDoUong();
             if (name.length() > 16)
                 name = name.substring(0, 14) + "..";
@@ -299,8 +297,9 @@ public class ReceiptDialog extends JDialog {
         try {
             Response res = client.sendRequest(new Request(CommandType.GET_EMPLOYEES, null));
             if (res.isSuccess()) {
-                List<NhanVien> list = (List<NhanVien>) res.getData();
-                for (NhanVien nv : list) {
+                @SuppressWarnings("unchecked")
+                List<NhanVienDTO> list = (List<NhanVienDTO>) res.getData();
+                for (NhanVienDTO nv : list) {
                     if (nv.getMaNhanVien().equals(id)) {
                         employeeName = nv.getHoTen();
                         break;

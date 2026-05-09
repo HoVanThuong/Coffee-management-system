@@ -578,7 +578,7 @@ public class ManagerDashboard extends JFrame {
         filterGroup.setOpaque(false);
         JLabel lblF = new JLabel("Lọc theo:");
         lblF.setFont(F_LABEL);
-        JComboBox<String> cbTime = styledCombo(new String[] { "Hôm nay", "7 Ngày qua", "Tháng này", "Năm này" });
+        JComboBox<String> cbTime = styledCombo(new String[] { "Hôm nay", "Tuần", "Tháng", "Năm" });
         filterGroup.add(lblF);
         filterGroup.add(cbTime);
 
@@ -665,13 +665,13 @@ public class ManagerDashboard extends JFrame {
                     LocalDate from = today, to = today;
                     String title = "Biểu đồ doanh thu (VNĐ)";
 
-                    if ("7 Ngày qua".equals(filter)) {
+                    if ("7 Ngày qua".equals(filter) || "Tuần".equals(filter)) {
                         from = today.minusDays(6);
                         title = "Biểu đồ doanh thu 7 ngày qua (VNĐ)";
-                    } else if ("Tháng này".equals(filter)) {
+                    } else if ("Tháng này".equals(filter) || "Tháng".equals(filter)) {
                         from = today.with(java.time.temporal.TemporalAdjusters.firstDayOfMonth());
                         title = "Biểu đồ doanh thu tháng " + today.getMonthValue() + " (VNĐ)";
-                    } else if ("Năm này".equals(filter) || "Năm nay".equals(filter)) {
+                    } else if ("Năm này".equals(filter) || "Năm nay".equals(filter) || "Năm".equals(filter)) {
                         from = today.with(java.time.temporal.TemporalAdjusters.firstDayOfYear());
                         to = today.with(java.time.temporal.TemporalAdjusters.lastDayOfYear());
                         title = "Biểu đồ doanh thu năm " + today.getYear() + " (VNĐ)";
@@ -1514,14 +1514,17 @@ public class ManagerDashboard extends JFrame {
             LocalDate today = LocalDate.now();
             LocalDate from, to;
             switch (selected) {
+                case "Tuần":
                 case "7 Ngày qua":
                     from = today.minusDays(6);
                     to = today;
                     break;
+                case "Tháng":
                 case "Tháng này":
                     from = today.with(TemporalAdjusters.firstDayOfMonth());
                     to = today;
                     break;
+                case "Năm":
                 case "Năm nay":
                     from = today.with(TemporalAdjusters.firstDayOfYear());
                     to = today.with(TemporalAdjusters.lastDayOfYear());
@@ -1533,9 +1536,9 @@ public class ManagerDashboard extends JFrame {
             }
             // Cập nhật tiêu đề biểu đồ
             String title;
-            if ("Năm nay".equals(selected)) {
+            if ("Năm".equals(selected) || "Năm nay".equals(selected)) {
                 title = "Biểu đồ doanh thu năm " + today.getYear() + " (VNĐ)";
-            } else if ("Tháng này".equals(selected)) {
+            } else if ("Tháng".equals(selected) || "Tháng này".equals(selected)) {
                 title = "Biểu đồ doanh thu tháng " + today.getMonthValue() + " (VNĐ)";
             } else {
                 title = "Biểu đồ doanh thu - " + selected + " (VNĐ)";

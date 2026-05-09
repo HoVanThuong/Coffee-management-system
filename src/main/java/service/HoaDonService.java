@@ -12,4 +12,5 @@ public interface HoaDonService {
     HoaDonDTO getActiveOrderForTable(String maBan);
     boolean handleOrderFood(HoaDonDTO phieuDto, List<ChiTietHoaDonDTO> cartDto);
     boolean handlePayment(HoaDonDTO hoaDonDto);
+    dto.ThongKeDTO getThongKe(java.time.LocalDate fromDate, java.time.LocalDate toDate);
 }

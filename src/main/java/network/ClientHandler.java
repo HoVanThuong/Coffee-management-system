@@ -19,7 +19,6 @@ public class ClientHandler implements Runnable {
     private final DoUongService doUongService = new DoUongServiceImpl();
     private final NhanVienService nhanVienService = new NhanVienServiceImpl();
     private final TaiKhoanService taiKhoanService = new TaiKhoanServiceImpl();
-    private final ThongKeService thongKeService = new ThongKeServiceImpl();
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -282,7 +281,7 @@ public class ClientHandler implements Runnable {
                         Object[] dateRange = (Object[]) req.getData();
                         LocalDate fromDate = Mapper.map(dateRange[0], LocalDate.class);
                         LocalDate toDate = Mapper.map(dateRange[1], LocalDate.class);
-                        dto.ThongKeDTO thongKe = thongKeService.getThongKe(fromDate, toDate);
+                        dto.ThongKeDTO thongKe = hoaDonService.getThongKe(fromDate, toDate);
                         response.setSuccess(true);
                         response.setData(thongKe);
                     } catch (Exception e) {

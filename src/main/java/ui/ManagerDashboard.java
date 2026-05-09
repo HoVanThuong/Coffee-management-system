@@ -554,7 +554,7 @@ public class ManagerDashboard extends JFrame {
         statsRow.add(cardRev);
         statsRow.add(cardOrder);
         statsRow.add(cardTable);
-        
+
         scrollContent.add(statsRow);
         scrollContent.add(Box.createRigidArea(new Dimension(0, 32)));
 
@@ -569,7 +569,7 @@ public class ManagerDashboard extends JFrame {
         // Chart Header (Title + Filter)
         JPanel chartHeader = new JPanel(new BorderLayout());
         chartHeader.setOpaque(false);
-        
+
         JLabel lblChartTitle = new JLabel("Phân tích dữ liệu");
         lblChartTitle.setFont(F_SECTION);
         lblChartTitle.setForeground(C_TEXT_PRIMARY);
@@ -596,12 +596,14 @@ public class ManagerDashboard extends JFrame {
 
         // Logic
         loadDashboardData(cardRev, cardOrder, cardTable, chart, "Hôm nay");
-        cbTime.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
+        cbTime.addActionListener(
+                e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
 
         // Add refresh button for dashboard in topBar
         JPanel topBar = (JPanel) page.getComponent(0);
         JButton btnRef = mkButton("Làm Mới", C_ACCENT);
-        btnRef.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
+        btnRef.addActionListener(
+                e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
         topBar.add(btnRef, BorderLayout.EAST);
 
         // Tự động làm mới dữ liệu mỗi 10 giây
@@ -615,7 +617,7 @@ public class ManagerDashboard extends JFrame {
         JScrollPane scroll = new JScrollPane(scrollContent);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        
+
         page.add(scroll, BorderLayout.CENTER);
         return page;
     }
@@ -658,78 +660,34 @@ public class ManagerDashboard extends JFrame {
                                 .setText(String.valueOf(activeTables)));
                     }
 
-                    // 2. Revenue & Orders
-                    Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
-                    if (resInvoices.isSuccess() && resInvoices.getData() != null) {
-                        List<HoaDonDTO> listHD = (List<HoaDonDTO>) resInvoices.getData();
-                        LocalDate now = LocalDate.now();
-                        double totalRev = 0;
-                        int totalOrders = 0;
-                        Map<String, Double> chartData = new LinkedHashMap<>();
+                    // 2. Revenue & Orders (Use Server Statistics)
+                    LocalDate today = LocalDate.now();
+                    LocalDate from = today, to = today;
+                    String title = "Biểu đồ doanh thu (VNĐ)";
 
-                        if ("Hôm nay".equals(filter)) {
-                            totalOrders = (int) listHD.stream()
-                                    .filter(h -> now.equals(h.getNgayTao()) && "Đã thanh toán".equals(h.getTrangThai()))
-                                    .count();
-                            totalRev = listHD.stream()
-                                    .filter(h -> now.equals(h.getNgayTao()) && "Đã thanh toán".equals(h.getTrangThai()))
-                                    .mapToDouble(HoaDonDTO::getTongTien).sum();
-                            chart.setTitle("Doanh thu hôm nay (VNĐ)");
-                            chartData.put(now.format(DateTimeFormatter.ofPattern("dd/MM")), totalRev);
-                        } else if ("7 Ngày qua".equals(filter)) {
-                            LocalDate sevenDaysAgo = now.minusDays(6);
-                            for (int i = 0; i < 7; i++)
-                                chartData.put(sevenDaysAgo.plusDays(i).format(DateTimeFormatter.ofPattern("dd/MM")),
-                                        0.0);
-                            for (HoaDonDTO h : listHD) {
-                                if (h.getNgayTao() != null && !h.getNgayTao().isBefore(sevenDaysAgo)
-                                        && "Đã thanh toán".equals(h.getTrangThai())) {
-                                    totalOrders++;
-                                    totalRev += h.getTongTien();
-                                    String key = h.getNgayTao().format(DateTimeFormatter.ofPattern("dd/MM"));
-                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
-                                }
-                            }
-                            chart.setTitle("Biểu đồ doanh thu 7 ngày qua (VNĐ)");
-                        } else if ("Tháng này".equals(filter)) {
-                            int month = now.getMonthValue();
-                            int year = now.getYear();
-                            for (int i = 1; i <= now.getDayOfMonth(); i++)
-                                chartData.put(i + "/" + month, 0.0);
-                            for (HoaDonDTO h : listHD) {
-                                if (h.getNgayTao() != null && h.getNgayTao().getMonthValue() == month
-                                        && h.getNgayTao().getYear() == year
-                                        && "Đã thanh toán".equals(h.getTrangThai())) {
-                                    totalOrders++;
-                                    totalRev += h.getTongTien();
-                                    String key = h.getNgayTao().getDayOfMonth() + "/" + month;
-                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
-                                }
-                            }
-                            chart.setTitle("Biểu đồ doanh thu tháng " + month + " (VNĐ)");
-                        } else if ("Năm này".equals(filter)) {
-                            int year = now.getYear();
-                            for (int i = 1; i <= 12; i++)
-                                chartData.put("T" + i, 0.0);
-                            for (HoaDonDTO h : listHD) {
-                                if (h.getNgayTao() != null && h.getNgayTao().getYear() == year
-                                        && "Đã thanh toán".equals(h.getTrangThai())) {
-                                    totalOrders++;
-                                    totalRev += h.getTongTien();
-                                    String key = "T" + h.getNgayTao().getMonthValue();
-                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
-                                }
-                            }
-                            chart.setTitle("Biểu đồ doanh thu năm " + year + " (VNĐ)");
-                        }
+                    if ("7 Ngày qua".equals(filter)) {
+                        from = today.minusDays(6);
+                        title = "Biểu đồ doanh thu 7 ngày qua (VNĐ)";
+                    } else if ("Tháng này".equals(filter)) {
+                        from = today.with(java.time.temporal.TemporalAdjusters.firstDayOfMonth());
+                        title = "Biểu đồ doanh thu tháng " + today.getMonthValue() + " (VNĐ)";
+                    } else if ("Năm này".equals(filter) || "Năm nay".equals(filter)) {
+                        from = today.with(java.time.temporal.TemporalAdjusters.firstDayOfYear());
+                        to = today.with(java.time.temporal.TemporalAdjusters.lastDayOfYear());
+                        title = "Biểu đồ doanh thu năm " + today.getYear() + " (VNĐ)";
+                    }
 
-                        final double fRev = totalRev;
-                        final int fOrders = totalOrders;
+                    Response res = client.sendRequest(new Request(CommandType.GET_THONG_KE, new Object[] { from, to }));
+                    if (res.isSuccess() && res.getData() != null) {
+                        ThongKeDTO tk = (ThongKeDTO) res.getData();
+                        String finalTitle = title;
                         SwingUtilities.invokeLater(() -> {
                             ((JLabel) cardRev.getClientProperty("valueLabel"))
-                                    .setText(String.format("%,.0f VNĐ", fRev));
-                            ((JLabel) cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fOrders));
-                            chart.updateData(chartData);
+                                    .setText(String.format("%,.0f VNĐ", tk.getTongDoanhThu()));
+                            ((JLabel) cardOrder.getClientProperty("valueLabel"))
+                                    .setText(String.valueOf(tk.getTongHoaDon()));
+                            chart.setTitle(finalTitle);
+                            chart.updateData(tk.getDoanhThuTheoNgay());
                         });
                     }
                 } catch (Exception ex) {
@@ -903,7 +861,7 @@ public class ManagerDashboard extends JFrame {
         if (existing != null && existing.getHinhAnh() != null) {
             imgBytesContainer[0] = existing.getHinhAnh();
         }
-        
+
         JLabel lblImgPreview = new JLabel("Chưa có ảnh", SwingConstants.CENTER);
         lblImgPreview.setPreferredSize(new Dimension(100, 100));
         lblImgPreview.setBorder(new LineBorder(C_BORDER));
@@ -924,7 +882,7 @@ public class ManagerDashboard extends JFrame {
                     // Đọc và nén ảnh (scale xuống max 150x150) để tránh nặng network
                     BufferedImage originalImage = ImageIO.read(f);
                     int type = originalImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
-                    
+
                     int maxDim = 150;
                     int width = originalImage.getWidth();
                     int height = originalImage.getHeight();
@@ -933,17 +891,17 @@ public class ManagerDashboard extends JFrame {
                         width = Math.round(width * ratio);
                         height = Math.round(height * ratio);
                     }
-                    
+
                     BufferedImage resizedImage = new BufferedImage(width, height, type);
                     Graphics2D g = resizedImage.createGraphics();
                     g.drawImage(originalImage, 0, 0, width, height, null);
                     g.dispose();
-                    
+
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     ImageIO.write(resizedImage, "png", baos);
                     byte[] newBytes = baos.toByteArray();
                     imgBytesContainer[0] = newBytes;
-                    
+
                     // Hiển thị preview
                     ImageIcon icon = new ImageIcon(newBytes);
                     Image scaledPreview = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
@@ -1148,7 +1106,7 @@ public class ManagerDashboard extends JFrame {
                 int modelRow = empTable.convertRowIndexToModel(row);
                 if (empModel.getValueAt(modelRow, 5) != null
                         && !empModel.getValueAt(modelRow, 5).toString().isEmpty()) {
-                    info("Nhân viên này đã nghỉ việc rồi!");
+                    info("Nhân viên này đã nghỉ việc!");
                     return;
                 }
                 String maNV = (String) empModel.getValueAt(modelRow, 0);
@@ -1463,7 +1421,7 @@ public class ManagerDashboard extends JFrame {
         lblFilter.setForeground(C_TEXT_MUTED);
 
         JComboBox<String> cbFilter = styledCombo(
-                new String[]{"Hôm nay", "7 Ngày qua", "Tháng này", "Năm nay"});
+                new String[] { "Hôm nay", "Tuần", "Tháng", "Năm" });
         cbFilter.setPreferredSize(new Dimension(160, 32));
 
         JPanel filterLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -1477,10 +1435,10 @@ public class ManagerDashboard extends JFrame {
         JPanel cardRow = new JPanel(new GridLayout(1, 4, 16, 0));
         cardRow.setOpaque(false);
 
-        JPanel cardRev    = createStatCard("Tổng Doanh Thu",        "0 VNĐ", C_SUCCESS);
-        JPanel cardOrders = createStatCard("Số Hóa Đơn",            "0",     C_ACCENT);
-        JPanel cardAvg    = createStatCard("Doanh Thu TB/Đơn",      "0 VNĐ", C_WARNING);
-        JPanel cardTables = createStatCard("Số Bàn Đã Phục Vụ",    "0",     C_DANGER);
+        JPanel cardRev = createStatCard("Tổng Doanh Thu", "0 VNĐ", C_SUCCESS);
+        JPanel cardOrders = createStatCard("Số Hóa Đơn", "0", C_ACCENT);
+        JPanel cardAvg = createStatCard("Doanh Thu TB/Đơn", "0 VNĐ", C_WARNING);
+        JPanel cardTables = createStatCard("Số Bàn Đã Phục Vụ", "0", C_DANGER);
 
         cardRow.add(cardRev);
         cardRow.add(cardOrders);
@@ -1522,9 +1480,11 @@ public class ManagerDashboard extends JFrame {
         lblTopTitle.setFont(F_SECTION);
         lblTopTitle.setForeground(C_TEXT_PRIMARY);
 
-        String[] topCols = {"Tên Đồ Uống", "Loại", "SL Bán", "Doanh Thu (VNĐ)"};
+        String[] topCols = { "Tên Đồ Uống", "Loại", "SL Bán", "Doanh Thu (VNĐ)" };
         DefaultTableModel topModel = new DefaultTableModel(topCols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         JTable topTable = buildTable(topModel);
         centerColumn(topTable, 2);
@@ -1555,15 +1515,21 @@ public class ManagerDashboard extends JFrame {
             LocalDate from, to;
             switch (selected) {
                 case "7 Ngày qua":
-                    from = today.minusDays(6); to = today; break;
+                    from = today.minusDays(6);
+                    to = today;
+                    break;
                 case "Tháng này":
-                    from = today.with(TemporalAdjusters.firstDayOfMonth()); to = today; break;
+                    from = today.with(TemporalAdjusters.firstDayOfMonth());
+                    to = today;
+                    break;
                 case "Năm nay":
                     from = today.with(TemporalAdjusters.firstDayOfYear());
-                    to   = today.with(TemporalAdjusters.lastDayOfYear());
+                    to = today.with(TemporalAdjusters.lastDayOfYear());
                     break;
                 default: // "Hôm nay"
-                    from = today; to = today; break;
+                    from = today;
+                    to = today;
+                    break;
             }
             // Cập nhật tiêu đề biểu đồ
             String title;
@@ -1581,19 +1547,19 @@ public class ManagerDashboard extends JFrame {
         cbFilter.addActionListener(e -> loadData.run());
 
         // Load lần đầu (mặc định: Tháng này)
-        cbFilter.setSelectedItem("Tháng này");
+        cbFilter.setSelectedItem("Tháng");
         loadData.run();
 
         return page;
     }
 
     private void loadThongKe(LocalDate from, LocalDate to,
-                             JPanel cardRev, JPanel cardOrders, JPanel cardAvg, JPanel cardTables,
-                             SimpleBarChart barChart, DefaultTableModel topModel) {
+            JPanel cardRev, JPanel cardOrders, JPanel cardAvg, JPanel cardTables,
+            SimpleBarChart barChart, DefaultTableModel topModel) {
         new SwingWorker<ThongKeDTO, Void>() {
             @Override
             protected ThongKeDTO doInBackground() throws Exception {
-                Response res = client.sendRequest(new Request(CommandType.GET_THONG_KE, new Object[]{from, to}));
+                Response res = client.sendRequest(new Request(CommandType.GET_THONG_KE, new Object[] { from, to }));
                 if (res.isSuccess() && res.getData() != null) {
                     return (ThongKeDTO) res.getData();
                 }
@@ -1604,7 +1570,8 @@ public class ManagerDashboard extends JFrame {
             protected void done() {
                 try {
                     ThongKeDTO tk = get();
-                    if (tk == null) return;
+                    if (tk == null)
+                        return;
 
                     // Cập nhật 4 thẻ tổng quan
                     ((JLabel) cardRev.getClientProperty("valueLabel"))
@@ -1626,7 +1593,7 @@ public class ManagerDashboard extends JFrame {
                     if (tk.getTopMonBanChay() != null) {
                         java.text.DecimalFormat df = new java.text.DecimalFormat("#,##0");
                         for (ThongKeDoUongDTO m : tk.getTopMonBanChay()) {
-                            topModel.addRow(new Object[]{
+                            topModel.addRow(new Object[] {
                                     m.getTenDoUong(),
                                     m.getLoaiDoUong(),
                                     m.getSoLuongDaBan(),

@@ -16,4 +16,5 @@ public class DoUongDTO implements Serializable {
     private String moTaDoUong;
     private String giaTien;
     private String loaiDoUong;
+    private byte[] hinhAnh;
 }

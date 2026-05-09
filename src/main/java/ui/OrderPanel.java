@@ -411,10 +411,16 @@ public class OrderPanel extends JPanel {
         lblPrice.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblPrice.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-        // Placeholder Icon
-        JLabel lblIcon = new JLabel("☕");
-        lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
-        lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
+        // Image or Placeholder Icon
+        JLabel lblIcon = new JLabel("", SwingConstants.CENTER);
+        if (drink.getHinhAnh() != null && drink.getHinhAnh().length > 0) {
+            ImageIcon icon = new ImageIcon(drink.getHinhAnh());
+            Image scaled = icon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+            lblIcon.setIcon(new ImageIcon(scaled));
+        } else {
+            lblIcon.setText("☕");
+            lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
+        }
 
         card.add(lblName, BorderLayout.NORTH);
         card.add(lblIcon, BorderLayout.CENTER);

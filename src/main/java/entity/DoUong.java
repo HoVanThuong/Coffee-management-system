@@ -47,6 +47,10 @@ public class DoUong implements Serializable {
     @Column(name = "loai_do_uong")
     private String loaiDoUong;
 
+    @Lob
+    @Column(name = "hinh_anh", columnDefinition = "LONGBLOB")
+    private byte[] hinhAnh;
+
     // DoUong 1 --- * ChiTietHoaDon
     @JsonIgnore
     @OneToMany(mappedBy = "doUong", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

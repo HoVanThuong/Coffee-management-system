@@ -19,6 +19,12 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import ui.components.SimpleBarChart;
 import ui.components.SettingsPanel;
+import java.io.File;
+import java.nio.file.Files;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class ManagerDashboard extends JFrame {
 
@@ -855,7 +861,7 @@ public class ManagerDashboard extends JFrame {
     }
 
     private void showDoUongFormDialog(DoUongDTO existing, DefaultTableModel model) {
-        JDialog dlg = buildDialog(existing == null ? "Thêm Món Mới" : "Sửa Thông Tin Món", 420, 340);
+        JDialog dlg = buildDialog(existing == null ? "Thêm Món Mới" : "Sửa Thông Tin Món", 450, 480);
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(C_CARD_BG);
@@ -887,10 +893,74 @@ public class ManagerDashboard extends JFrame {
             }
         }
 
+        // --- Ảnh đồ uống ---
+        final byte[][] imgBytesContainer = new byte[1][1];
+        if (existing != null && existing.getHinhAnh() != null) {
+            imgBytesContainer[0] = existing.getHinhAnh();
+        }
+        
+        JLabel lblImgPreview = new JLabel("Chưa có ảnh", SwingConstants.CENTER);
+        lblImgPreview.setPreferredSize(new Dimension(100, 100));
+        lblImgPreview.setBorder(new LineBorder(C_BORDER));
+        if (imgBytesContainer[0] != null) {
+            ImageIcon icon = new ImageIcon(imgBytesContainer[0]);
+            Image scaled = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            lblImgPreview.setIcon(new ImageIcon(scaled));
+            lblImgPreview.setText("");
+        }
+
+        JButton btnChooseImage = mkButton("Chọn Ảnh...", C_ACCENT_DARK);
+        btnChooseImage.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setFileFilter(new FileNameExtensionFilter("Images (JPG, PNG)", "jpg", "jpeg", "png"));
+            if (chooser.showOpenDialog(dlg) == JFileChooser.APPROVE_OPTION) {
+                File f = chooser.getSelectedFile();
+                try {
+                    // Đọc và nén ảnh (scale xuống max 150x150) để tránh nặng network
+                    BufferedImage originalImage = ImageIO.read(f);
+                    int type = originalImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
+                    
+                    int maxDim = 150;
+                    int width = originalImage.getWidth();
+                    int height = originalImage.getHeight();
+                    if (width > maxDim || height > maxDim) {
+                        float ratio = Math.min((float) maxDim / width, (float) maxDim / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+                    
+                    BufferedImage resizedImage = new BufferedImage(width, height, type);
+                    Graphics2D g = resizedImage.createGraphics();
+                    g.drawImage(originalImage, 0, 0, width, height, null);
+                    g.dispose();
+                    
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ImageIO.write(resizedImage, "png", baos);
+                    byte[] newBytes = baos.toByteArray();
+                    imgBytesContainer[0] = newBytes;
+                    
+                    // Hiển thị preview
+                    ImageIcon icon = new ImageIcon(newBytes);
+                    Image scaledPreview = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+                    lblImgPreview.setIcon(new ImageIcon(scaledPreview));
+                    lblImgPreview.setText("");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(dlg, "Lỗi đọc file ảnh!");
+                }
+            }
+        });
+
+        JPanel imgPanel = new JPanel(new BorderLayout(10, 0));
+        imgPanel.setOpaque(false);
+        imgPanel.add(lblImgPreview, BorderLayout.WEST);
+        imgPanel.add(btnChooseImage, BorderLayout.CENTER);
+
         addFormRow(form, gbc, 0, "Mã Đồ Uống", txtMa);
         addFormRow(form, gbc, 1, "Tên Đồ Uống", txtTen);
         addFormRow(form, gbc, 2, "Giá Tiền (VNĐ)", txtGia);
         addFormRow(form, gbc, 3, "Loại", cbLoai);
+        addFormRow(form, gbc, 4, "Hình Ảnh", imgPanel);
 
         JButton btnSave = mkButton("Lưu thông tin", C_ACCENT);
         btnSave.addActionListener(e -> {
@@ -911,6 +981,7 @@ public class ManagerDashboard extends JFrame {
             d.setTenDoUong(txtTen.getText());
             d.setGiaTien(txtGia.getText());
             d.setLoaiDoUong((String) cbLoai.getSelectedItem());
+            d.setHinhAnh(imgBytesContainer[0]);
             CommandType cmd = existing == null ? CommandType.MANAGE_MENU_ADD : CommandType.MANAGE_MENU_UPDATE;
             try {
                 Response res = client.sendRequest(new Request(cmd, d));

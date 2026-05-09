@@ -110,7 +110,14 @@ public class HoaDonDaoImpl implements HoaDonDao {
     public List<HoaDon> findByDateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            return em.createQuery("SELECT hd FROM HoaDon hd WHERE hd.ngayTao BETWEEN :start AND :end", HoaDon.class)
+            return em.createQuery(
+                    "SELECT DISTINCT hd FROM HoaDon hd " +
+                    "LEFT JOIN FETCH hd.ban " +
+                    "LEFT JOIN FETCH hd.nhanVien " +
+                    "LEFT JOIN FETCH hd.chiTietHoaDons ct " +
+                    "LEFT JOIN FETCH ct.doUong " +
+                    "WHERE hd.ngayTao BETWEEN :start AND :end " +
+                    "ORDER BY hd.ngayTao ASC", HoaDon.class)
                     .setParameter("start", fromDate)
                     .setParameter("end", toDate)
                     .getResultList();

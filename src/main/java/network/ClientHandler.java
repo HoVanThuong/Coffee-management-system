@@ -7,6 +7,7 @@ import service.impl.*;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.time.LocalDate;
 import java.util.List;
 
 public class ClientHandler implements Runnable {
@@ -18,6 +19,7 @@ public class ClientHandler implements Runnable {
     private final DoUongService doUongService = new DoUongServiceImpl();
     private final NhanVienService nhanVienService = new NhanVienServiceImpl();
     private final TaiKhoanService taiKhoanService = new TaiKhoanServiceImpl();
+    private final ThongKeService thongKeService = new ThongKeServiceImpl();
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -273,6 +275,20 @@ public class ClientHandler implements Runnable {
 
                     response.setSuccess(true);
                     response.setData(generatedId);
+                    break;
+
+                case GET_THONG_KE:
+                    try {
+                        Object[] dateRange = (Object[]) req.getData();
+                        LocalDate fromDate = Mapper.map(dateRange[0], LocalDate.class);
+                        LocalDate toDate = Mapper.map(dateRange[1], LocalDate.class);
+                        dto.ThongKeDTO thongKe = thongKeService.getThongKe(fromDate, toDate);
+                        response.setSuccess(true);
+                        response.setData(thongKe);
+                    } catch (Exception e) {
+                        response.setSuccess(false);
+                        response.setMessage("Lỗi thống kê: " + e.getMessage());
+                    }
                     break;
             }
         } catch (Exception e) {

@@ -25,6 +25,9 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.time.temporal.TemporalAdjusters;
+import dto.ThongKeDTO;
+import dto.ThongKeDoUongDTO;
 
 public class ManagerDashboard extends JFrame {
 
@@ -70,6 +73,7 @@ public class ManagerDashboard extends JFrame {
             { "Thực Đơn", "MENU" },
             { "Nhân Viên", "STAFF" },
             { "Hóa Đơn", "INVOICES" },
+            { "Thống Kê", "THONG_KE" },
             { "Cài Đặt", "SETTINGS" },
     };
 
@@ -91,10 +95,11 @@ public class ManagerDashboard extends JFrame {
         mainContentPanel = new JPanel(cardLayout);
         mainContentPanel.setBackground(C_PAGE_BG);
         mainContentPanel.add(createDashboardPanel(), "DASHBOARD");
-        mainContentPanel.add(createTableManagementPanel(), "TABLES"); // THÊM DÒNG NÀY
+        mainContentPanel.add(createTableManagementPanel(), "TABLES");
         mainContentPanel.add(createMenuManagementPanel(), "MENU");
         mainContentPanel.add(createEmployeeManagementPanel(), "STAFF");
         mainContentPanel.add(createInvoiceManagementPanel(), "INVOICES");
+        mainContentPanel.add(createThongKePanel(), "THONG_KE");
         mainContentPanel.add(new SettingsPanel(client, taiKhoan), "SETTINGS");
         add(mainContentPanel, BorderLayout.CENTER);
     }
@@ -1434,6 +1439,206 @@ public class ManagerDashboard extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // THỐNG KÊ DOANH THU
+    // ══════════════════════════════════════════════════════════
+    private JPanel createThongKePanel() {
+        JPanel page = buildPageShell("", "Thống Kê Doanh Thu", "Phân tích doanh thu chi tiết theo thời gian");
+
+        JPanel body = new JPanel(new BorderLayout(0, 20));
+        body.setBackground(C_PAGE_BG);
+        body.setBorder(new EmptyBorder(24, 32, 24, 32));
+
+        // ── Filter Bar: ComboBox giống Dashboard ─────────────
+        JPanel filterBar = new JPanel(new BorderLayout(16, 0));
+        filterBar.setBackground(C_CARD_BG);
+        filterBar.setBorder(new CompoundBorder(
+                new LineBorder(C_BORDER, 1, true),
+                new EmptyBorder(14, 20, 14, 20)));
+
+        JLabel lblFilter = new JLabel("Lọc theo:");
+        lblFilter.setFont(F_LABEL);
+        lblFilter.setForeground(C_TEXT_MUTED);
+
+        JComboBox<String> cbFilter = styledCombo(
+                new String[]{"Hôm nay", "7 Ngày qua", "Tháng này", "Năm nay"});
+        cbFilter.setPreferredSize(new Dimension(160, 32));
+
+        JPanel filterLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        filterLeft.setOpaque(false);
+        filterLeft.add(lblFilter);
+        filterLeft.add(cbFilter);
+
+        filterBar.add(filterLeft, BorderLayout.WEST);
+
+        // ── 4 Thẻ tổng quan ──────────────────────────────────
+        JPanel cardRow = new JPanel(new GridLayout(1, 4, 16, 0));
+        cardRow.setOpaque(false);
+
+        JPanel cardRev    = createStatCard("Tổng Doanh Thu",        "0 VNĐ", C_SUCCESS);
+        JPanel cardOrders = createStatCard("Số Hóa Đơn",            "0",     C_ACCENT);
+        JPanel cardAvg    = createStatCard("Doanh Thu TB/Đơn",      "0 VNĐ", C_WARNING);
+        JPanel cardTables = createStatCard("Số Bàn Đã Phục Vụ",    "0",     C_DANGER);
+
+        cardRow.add(cardRev);
+        cardRow.add(cardOrders);
+        cardRow.add(cardAvg);
+        cardRow.add(cardTables);
+
+        // ── Phần dưới: biểu đồ + bảng top món ──────────────
+        JSplitPane splitBottom = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitBottom.setDividerLocation(620);
+        splitBottom.setDividerSize(8);
+        splitBottom.setBorder(null);
+
+        // Biểu đồ
+        JPanel chartPanel = new JPanel(new BorderLayout(0, 10));
+        chartPanel.setBackground(C_CARD_BG);
+        chartPanel.setBorder(new CompoundBorder(
+                new LineBorder(C_BORDER, 1, true),
+                new EmptyBorder(16, 20, 16, 20)));
+
+        JLabel lblChartTitle = new JLabel("Biểu đồ doanh thu (VNĐ)");
+        lblChartTitle.setFont(F_SECTION);
+        lblChartTitle.setForeground(C_TEXT_PRIMARY);
+
+        SimpleBarChart barChart = new SimpleBarChart("Doanh thu");
+        barChart.setBarColor(C_ACCENT);
+        barChart.setPreferredSize(new Dimension(500, 300));
+
+        chartPanel.add(lblChartTitle, BorderLayout.NORTH);
+        chartPanel.add(barChart, BorderLayout.CENTER);
+
+        // Bảng Top Món
+        JPanel topMonPanel = new JPanel(new BorderLayout(0, 10));
+        topMonPanel.setBackground(C_CARD_BG);
+        topMonPanel.setBorder(new CompoundBorder(
+                new LineBorder(C_BORDER, 1, true),
+                new EmptyBorder(16, 20, 16, 20)));
+
+        JLabel lblTopTitle = new JLabel("Top 10 Món Bán Chạy");
+        lblTopTitle.setFont(F_SECTION);
+        lblTopTitle.setForeground(C_TEXT_PRIMARY);
+
+        String[] topCols = {"Tên Đồ Uống", "Loại", "SL Bán", "Doanh Thu (VNĐ)"};
+        DefaultTableModel topModel = new DefaultTableModel(topCols, 0) {
+            public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable topTable = buildTable(topModel);
+        centerColumn(topTable, 2);
+        centerColumn(topTable, 3);
+        topTable.getColumnModel().getColumn(0).setPreferredWidth(160);
+        topTable.getColumnModel().getColumn(1).setPreferredWidth(80);
+
+        topMonPanel.add(lblTopTitle, BorderLayout.NORTH);
+        topMonPanel.add(styledScroll(topTable), BorderLayout.CENTER);
+
+        splitBottom.setLeftComponent(chartPanel);
+        splitBottom.setRightComponent(topMonPanel);
+
+        // ── Lắp vào body ─────────────────────────────────────
+        JPanel topSection = new JPanel(new BorderLayout(0, 16));
+        topSection.setOpaque(false);
+        topSection.add(filterBar, BorderLayout.NORTH);
+        topSection.add(cardRow, BorderLayout.SOUTH);
+
+        body.add(topSection, BorderLayout.NORTH);
+        body.add(splitBottom, BorderLayout.CENTER);
+        page.add(body, BorderLayout.CENTER);
+
+        // ── Action: load dữ liệu khi đổi combobox ───────────
+        Runnable loadData = () -> {
+            String selected = (String) cbFilter.getSelectedItem();
+            LocalDate today = LocalDate.now();
+            LocalDate from, to;
+            switch (selected) {
+                case "7 Ngày qua":
+                    from = today.minusDays(6); to = today; break;
+                case "Tháng này":
+                    from = today.with(TemporalAdjusters.firstDayOfMonth()); to = today; break;
+                case "Năm nay":
+                    from = today.with(TemporalAdjusters.firstDayOfYear());
+                    to   = today.with(TemporalAdjusters.lastDayOfYear());
+                    break;
+                default: // "Hôm nay"
+                    from = today; to = today; break;
+            }
+            // Cập nhật tiêu đề biểu đồ
+            String title;
+            if ("Năm nay".equals(selected)) {
+                title = "Biểu đồ doanh thu năm " + today.getYear() + " (VNĐ)";
+            } else if ("Tháng này".equals(selected)) {
+                title = "Biểu đồ doanh thu tháng " + today.getMonthValue() + " (VNĐ)";
+            } else {
+                title = "Biểu đồ doanh thu - " + selected + " (VNĐ)";
+            }
+            lblChartTitle.setText(title);
+            loadThongKe(from, to, cardRev, cardOrders, cardAvg, cardTables, barChart, topModel);
+        };
+
+        cbFilter.addActionListener(e -> loadData.run());
+
+        // Load lần đầu (mặc định: Tháng này)
+        cbFilter.setSelectedItem("Tháng này");
+        loadData.run();
+
+        return page;
+    }
+
+    private void loadThongKe(LocalDate from, LocalDate to,
+                             JPanel cardRev, JPanel cardOrders, JPanel cardAvg, JPanel cardTables,
+                             SimpleBarChart barChart, DefaultTableModel topModel) {
+        new SwingWorker<ThongKeDTO, Void>() {
+            @Override
+            protected ThongKeDTO doInBackground() throws Exception {
+                Response res = client.sendRequest(new Request(CommandType.GET_THONG_KE, new Object[]{from, to}));
+                if (res.isSuccess() && res.getData() != null) {
+                    return (ThongKeDTO) res.getData();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ThongKeDTO tk = get();
+                    if (tk == null) return;
+
+                    // Cập nhật 4 thẻ tổng quan
+                    ((JLabel) cardRev.getClientProperty("valueLabel"))
+                            .setText(String.format("%,.0f VNĐ", tk.getTongDoanhThu()));
+                    ((JLabel) cardOrders.getClientProperty("valueLabel"))
+                            .setText(String.valueOf(tk.getTongHoaDon()));
+                    ((JLabel) cardAvg.getClientProperty("valueLabel"))
+                            .setText(String.format("%,.0f VNĐ", tk.getDoanhThuTrungBinhMoiDon()));
+                    ((JLabel) cardTables.getClientProperty("valueLabel"))
+                            .setText(String.valueOf(tk.getTongBanDaPhucVu()));
+
+                    // Cập nhật biểu đồ
+                    if (tk.getDoanhThuTheoNgay() != null) {
+                        barChart.updateData(tk.getDoanhThuTheoNgay());
+                    }
+
+                    // Cập nhật bảng Top Món
+                    topModel.setRowCount(0);
+                    if (tk.getTopMonBanChay() != null) {
+                        java.text.DecimalFormat df = new java.text.DecimalFormat("#,##0");
+                        for (ThongKeDoUongDTO m : tk.getTopMonBanChay()) {
+                            topModel.addRow(new Object[]{
+                                    m.getTenDoUong(),
+                                    m.getLoaiDoUong(),
+                                    m.getSoLuongDaBan(),
+                                    df.format(m.getDoanhThu())
+                            });
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }.execute();
     }
 
     // ══════════════════════════════════════════════════════════

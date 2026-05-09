@@ -9,5 +9,6 @@ public interface HoaDonDao {
     boolean delete(String id);
     HoaDon findById(String id);
     List<HoaDon> findByDate(java.time.LocalDate date);
+    List<HoaDon> findByDateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate);
     HoaDon getActiveOrderForTable(String maBan);
 }

@@ -102,26 +102,34 @@ public class OrderPanel extends JPanel {
 
         JLabel lblSearch = new JLabel("Thực đơn đồ uống");
         lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        
+
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         filterPanel.setOpaque(false);
-        
+
         txtSearch = new JTextField(15);
         txtSearch.putClientProperty("JTextField.placeholderText", "Tìm kiếm...");
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterMenu();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterMenu();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterMenu();
+            }
         });
-        
-        cbCategory = new JComboBox<>(new String[]{"Tất cả"});
+
+        cbCategory = new JComboBox<>(new String[] { "Tất cả" });
         cbCategory.addActionListener(e -> filterMenu());
-        
+
         filterPanel.add(new JLabel("Tìm:"));
         filterPanel.add(txtSearch);
         filterPanel.add(new JLabel("Loại:"));
         filterPanel.add(cbCategory);
-        
+
         topPanel.add(lblSearch, BorderLayout.WEST);
         topPanel.add(filterPanel, BorderLayout.EAST);
 
@@ -141,13 +149,15 @@ public class OrderPanel extends JPanel {
     private void filterMenu() {
         String keyword = txtSearch.getText().toLowerCase().trim();
         String category = (String) cbCategory.getSelectedItem();
-        if (category == null) category = "Tất cả";
-        
+        if (category == null)
+            category = "Tất cả";
+
         menuGrid.removeAll();
         for (DoUongDTO item : allMenuItems) {
             boolean matchKeyword = item.getTenDoUong().toLowerCase().contains(keyword);
-            boolean matchCategory = "Tất cả".equals(category) || (item.getLoaiDoUong() != null && item.getLoaiDoUong().equals(category));
-            
+            boolean matchCategory = "Tất cả".equals(category)
+                    || (item.getLoaiDoUong() != null && item.getLoaiDoUong().equals(category));
+
             if (matchKeyword && matchCategory) {
                 menuGrid.add(createDrinkCard(item));
             }
@@ -168,33 +178,41 @@ public class OrderPanel extends JPanel {
         panel.add(lblCart, BorderLayout.NORTH);
 
         // Existing Cart Table
-        String[] existingCols = {"Món (Đã đặt)", "SL", "Giá"};
+        String[] existingCols = { "Món (Đã đặt)", "SL", "Giá" };
         existingCartModel = new DefaultTableModel(existingCols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         existingCartTable = new JTable(existingCartModel);
-        
+
         // New Cart Table
-        String[] newCols = {"Món (Mới gọi)", "SL", "Giá", "Thao Tác"};
+        String[] newCols = { "Món (Mới gọi)", "SL", "Giá", "Thao Tác" };
         newCartModel = new DefaultTableModel(newCols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return c == 3; }
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return c == 3;
+            }
         };
         newCartTable = new JTable(newCartModel);
-        
+
         styleCartTables();
 
         JPanel tableContainer = new JPanel(new GridLayout(2, 1, 0, 10));
         tableContainer.setOpaque(false);
         tableContainer.setBorder(new EmptyBorder(0, 10, 0, 10));
-        
+
         JScrollPane existingScroll = new JScrollPane(existingCartTable);
         existingScroll.getViewport().setBackground(Color.WHITE);
-        existingScroll.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(230, 230, 235)), "Đã Đặt"));
-        
+        existingScroll.setBorder(
+                BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(230, 230, 235)), "Đã Đặt"));
+
         JScrollPane newScroll = new JScrollPane(newCartTable);
         newScroll.getViewport().setBackground(Color.WHITE);
-        newScroll.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(230, 230, 235)), "Gọi Thêm"));
-        
+        newScroll.setBorder(
+                BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(230, 230, 235)), "Gọi Thêm"));
+
         tableContainer.add(existingScroll);
         tableContainer.add(newScroll);
 
@@ -226,7 +244,7 @@ public class OrderPanel extends JPanel {
 
         btnPay = createStyledButton("THANH TOÁN", ACCENT_BLUE);
         btnPay.addActionListener(e -> handlePayment());
-        btnPay.setVisible(false); // Initially hide
+        btnPay.setVisible(false);
 
         btnGroup.add(btnConfirm);
         btnGroup.add(btnPay);
@@ -260,13 +278,13 @@ public class OrderPanel extends JPanel {
         newCartTable.setShowVerticalLines(false);
         newCartTable.setIntercellSpacing(new Dimension(0, 0));
         newCartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-        
+
         ActionPanelEditorRenderer actionRenderer = new ActionPanelEditorRenderer();
         newCartTable.getColumnModel().getColumn(3).setCellRenderer(actionRenderer);
         newCartTable.getColumnModel().getColumn(3).setCellEditor(actionRenderer);
         newCartTable.getColumnModel().getColumn(3).setPreferredWidth(120);
         newCartTable.getColumnModel().getColumn(3).setMinWidth(120);
-        
+
         newCartTable.getTableHeader().setBackground(Color.WHITE);
         newCartTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         newCartTable.getTableHeader().setForeground(new Color(150, 150, 160));
@@ -353,13 +371,15 @@ public class OrderPanel extends JPanel {
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
             renderPanel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
             return renderPanel;
         }
 
         @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
+                int column) {
             currentRow = row;
             editPanel.setBackground(table.getSelectionBackground());
             return editPanel;
@@ -378,7 +398,7 @@ public class OrderPanel extends JPanel {
                 @SuppressWarnings("unchecked")
                 List<DoUongDTO> list = (List<DoUongDTO>) response.getData();
                 allMenuItems = list;
-                
+
                 cbCategory.removeAllItems();
                 cbCategory.addItem("Tất cả");
                 List<String> categories = new ArrayList<>();
@@ -389,10 +409,12 @@ public class OrderPanel extends JPanel {
                         cbCategory.addItem(cat);
                     }
                 }
-                
+
                 filterMenu();
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private JPanel createDrinkCard(DoUongDTO drink) {
@@ -427,9 +449,17 @@ public class OrderPanel extends JPanel {
         card.add(lblPrice, BorderLayout.SOUTH);
 
         card.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent e) { addToCart(drink); }
-            public void mouseEntered(java.awt.event.MouseEvent e) { card.setBorder(new LineBorder(ACCENT_BLUE, 1)); }
-            public void mouseExited(java.awt.event.MouseEvent e) { card.setBorder(new LineBorder(new Color(230, 230, 235), 1)); }
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                addToCart(drink);
+            }
+
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                card.setBorder(new LineBorder(ACCENT_BLUE, 1));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                card.setBorder(new LineBorder(new Color(230, 230, 235), 1));
+            }
         });
 
         return card;
@@ -455,10 +485,10 @@ public class OrderPanel extends JPanel {
         existingCartModel.setRowCount(0);
         newCartModel.setRowCount(0);
         double total = 0;
-        
+
         for (ChiTietHoaDonDTO ct : existingCart) {
             double lineTotal = ct.getSoLuong() * ct.getDonGia();
-            existingCartModel.addRow(new Object[]{
+            existingCartModel.addRow(new Object[] {
                     ct.getDoUong().getTenDoUong(),
                     ct.getSoLuong(),
                     df.format(lineTotal)
@@ -468,7 +498,7 @@ public class OrderPanel extends JPanel {
 
         for (ChiTietHoaDonDTO ct : newCart) {
             double lineTotal = ct.getSoLuong() * ct.getDonGia();
-            newCartModel.addRow(new Object[]{
+            newCartModel.addRow(new Object[] {
                     ct.getDoUong().getTenDoUong(),
                     ct.getSoLuong(),
                     df.format(lineTotal),
@@ -478,16 +508,18 @@ public class OrderPanel extends JPanel {
         }
 
         lblTotal.setText(df.format(total) + " VND");
-        // Only show payment button if we have a confirmed order and NO pending new items
+
         boolean hasExistingOrder = activeOrder != null;
         boolean hasPendingChanges = !newCart.isEmpty();
-        
+
         btnPay.setVisible(hasExistingOrder && !hasPendingChanges);
         btnPay.setEnabled(hasExistingOrder && !hasPendingChanges);
     }
 
-    // Giữ nguyên logic loadData, loadActiveOrder, confirmOrder và handlePayment từ code gốc của bạn
-    private void loadData() { loadMenu(); loadActiveOrder(); }
+    private void loadData() {
+        loadMenu();
+        loadActiveOrder();
+    }
 
     private void loadActiveOrder() {
         activeOrder = null; // Reset
@@ -495,7 +527,7 @@ public class OrderPanel extends JPanel {
             Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
             if (response.isSuccess() && response.getData() != null) {
                 activeOrder = (HoaDonDTO) response.getData();
-                
+
                 // Gộp các món trùng lặp từ server (nếu DB đang có dữ liệu cũ bị trùng)
                 existingCart.clear();
                 if (activeOrder.getChiTietHoaDons() != null) {
@@ -513,7 +545,7 @@ public class OrderPanel extends JPanel {
                         }
                     }
                 }
-                
+
                 newCart.clear();
             }
             // Always update table to reflect the null/non-null state of activeOrder
@@ -524,36 +556,44 @@ public class OrderPanel extends JPanel {
         }
     }
 
-     private void confirmOrder() {
+    private void confirmOrder() {
         if (existingCart.isEmpty() && newCart.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống, hãy chọn món trước!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống, hãy chọn món trước!", "Thông báo",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (newCart.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Không có món nào mới được gọi thêm!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Không có món nào mới được gọi thêm!", "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        
+
         int confirm = JOptionPane.showConfirmDialog(
                 this,
                 "Xác nhận gửi Order cho bàn " + ban.getMaBan() + "?",
                 "Xác nhận",
-                JOptionPane.YES_NO_OPTION
-        );
-        if (confirm != JOptionPane.YES_OPTION) return;
-        
+                JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION)
+            return;
+
         double total = 0;
-        for (ChiTietHoaDonDTO ct : existingCart) total += ct.getSoLuong() * ct.getDonGia();
-        for (ChiTietHoaDonDTO ct : newCart) total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDonDTO ct : existingCart)
+            total += ct.getSoLuong() * ct.getDonGia();
+        for (ChiTietHoaDonDTO ct : newCart)
+            total += ct.getSoLuong() * ct.getDonGia();
 
         if (activeOrder == null) {
             activeOrder = new HoaDonDTO();
             // Fetch standardized ID from server
             try {
                 Response res = client.sendRequest(new Request(CommandType.GENERATE_ID, "HOA_DON"));
-                if (res.isSuccess()) activeOrder.setMaHoaDon((String) res.getData());
-                else activeOrder.setMaHoaDon("HD_TEMP_" + System.currentTimeMillis());
-            } catch (Exception ex) { activeOrder.setMaHoaDon("HD_TEMP_" + System.currentTimeMillis()); }
+                if (res.isSuccess())
+                    activeOrder.setMaHoaDon((String) res.getData());
+                else
+                    activeOrder.setMaHoaDon("HD_TEMP_" + System.currentTimeMillis());
+            } catch (Exception ex) {
+                activeOrder.setMaHoaDon("HD_TEMP_" + System.currentTimeMillis());
+            }
             activeOrder.setBan(ban);
             activeOrder.setNhanVien(currentUser.getNhanVien());
             activeOrder.setTrangThai("Chưa thanh toán");
@@ -572,7 +612,7 @@ public class OrderPanel extends JPanel {
         }
 
         try {
-            Object[] dataToSend = new Object[]{ activeOrder, itemsToSend };
+            Object[] dataToSend = new Object[] { activeOrder, itemsToSend };
             Request request = new Request(CommandType.ORDER_FOOD, dataToSend);
 
             Response res = client.sendRequest(request);
@@ -581,13 +621,15 @@ public class OrderPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Đã gửi Order thành công!");
                 parentFrame.showTablesView();
             } else {
-                JOptionPane.showMessageDialog(this, "Server từ chối: " + res.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Server từ chối: " + res.getMessage(), "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Lỗi kết nối máy chủ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }
+
     private void handlePayment() {
         if (activeOrder != null) {
             PaymentDialog paymentDialog = new PaymentDialog(parentFrame, client, activeOrder);

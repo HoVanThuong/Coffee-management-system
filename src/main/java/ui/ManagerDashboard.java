@@ -424,6 +424,11 @@ public class ManagerDashboard extends JFrame {
                     "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận đăng xuất",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (ok == JOptionPane.YES_OPTION) {
+                try {
+                    client.sendRequest(new Request(CommandType.LOGOUT, null));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
                 dispose();
                 new LoginFrame(client).setVisible(true);
             }

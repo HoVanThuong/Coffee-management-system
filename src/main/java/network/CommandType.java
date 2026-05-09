@@ -20,5 +20,6 @@ public enum CommandType {
     MANAGE_TABLE_DELETE,
     MANAGE_TABLE_ADD,
     MANAGE_TABLE_UPDATE,
-    GET_THONG_KE
+    GET_THONG_KE,
+    LOGOUT
 }

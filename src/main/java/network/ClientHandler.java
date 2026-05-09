@@ -41,7 +41,7 @@ public class ClientHandler implements Runnable {
         } finally {
             if (currentAccountId != null) {
                 System.out.println("Cleaning up session for account: " + currentAccountId);
-                taiKhoanService.updateStatus(currentAccountId, "Offline");
+                taiKhoanService.updateStatus(currentAccountId, "Ngoại tuyến");
             }
             try {
                 if (socket != null && !socket.isClosed()) socket.close();
@@ -287,6 +287,19 @@ public class ClientHandler implements Runnable {
                     } catch (Exception e) {
                         response.setSuccess(false);
                         response.setMessage("Lỗi thống kê: " + e.getMessage());
+                    }
+                    break;
+
+                case LOGOUT:
+                    if (currentAccountId != null) {
+                        taiKhoanService.updateStatus(currentAccountId, "Ngoại tuyến");
+                        System.out.println("Server: Account " + currentAccountId + " logged out.");
+                        this.currentAccountId = null;
+                        response.setSuccess(true);
+                        response.setMessage("Đăng xuất thành công.");
+                    } else {
+                        response.setSuccess(false);
+                        response.setMessage("Không tìm thấy phiên đăng nhập.");
                     }
                     break;
             }

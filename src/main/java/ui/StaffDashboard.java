@@ -134,6 +134,11 @@ public class StaffDashboard extends JFrame {
         JButton btnLogout = mkButton("Đăng xuất", C_DANGER);
         btnLogout.addActionListener(e -> {
             if (confirm("Xác nhận đăng xuất?")) {
+                try {
+                    client.sendRequest(new Request(CommandType.LOGOUT, null));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
                 this.dispose();
                 new LoginFrame(client).setVisible(true);
             }

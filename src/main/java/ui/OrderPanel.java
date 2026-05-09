@@ -127,7 +127,7 @@ public class OrderPanel extends JPanel {
 
         panel.add(topPanel, BorderLayout.NORTH);
 
-        menuGrid = new JPanel(new GridLayout(0, 3, 15, 15));
+        menuGrid = new JPanel(new ui.components.WrapLayout(FlowLayout.LEFT, 15, 15));
         menuGrid.setBackground(BG_LIGHT);
 
         JScrollPane scroll = new JScrollPane(menuGrid);
@@ -226,6 +226,7 @@ public class OrderPanel extends JPanel {
 
         btnPay = createStyledButton("THANH TOÁN", ACCENT_BLUE);
         btnPay.addActionListener(e -> handlePayment());
+        btnPay.setVisible(false); // Initially hide
 
         btnGroup.add(btnConfirm);
         btnGroup.add(btnPay);
@@ -396,6 +397,7 @@ public class OrderPanel extends JPanel {
 
     private JPanel createDrinkCard(DoUongDTO drink) {
         JPanel card = new JPanel(new BorderLayout(0, 5));
+        card.setPreferredSize(new Dimension(180, 200));
         card.setBackground(Color.WHITE);
         card.setBorder(new LineBorder(new Color(230, 230, 235), 1, true));
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -470,14 +472,19 @@ public class OrderPanel extends JPanel {
         }
 
         lblTotal.setText(df.format(total) + " VND");
-        btnPay.setVisible(activeOrder != null);
-        btnPay.setEnabled(newCart.isEmpty());
+        // Only show payment button if we have a confirmed order and NO pending new items
+        boolean hasExistingOrder = activeOrder != null;
+        boolean hasPendingChanges = !newCart.isEmpty();
+        
+        btnPay.setVisible(hasExistingOrder && !hasPendingChanges);
+        btnPay.setEnabled(hasExistingOrder && !hasPendingChanges);
     }
 
     // Giữ nguyên logic loadData, loadActiveOrder, confirmOrder và handlePayment từ code gốc của bạn
     private void loadData() { loadMenu(); loadActiveOrder(); }
 
     private void loadActiveOrder() {
+        activeOrder = null; // Reset
         try {
             Response response = client.sendRequest(new Request(CommandType.GET_ORDER, ban.getMaBan()));
             if (response.isSuccess() && response.getData() != null) {
@@ -502,9 +509,13 @@ public class OrderPanel extends JPanel {
                 }
                 
                 newCart.clear();
-                updateCartTable();
             }
-        } catch (Exception e) { e.printStackTrace(); }
+            // Always update table to reflect the null/non-null state of activeOrder
+            updateCartTable();
+        } catch (Exception e) {
+            e.printStackTrace();
+            updateCartTable();
+        }
     }
 
      private void confirmOrder() {

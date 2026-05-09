@@ -87,6 +87,15 @@ public class HoaDonServiceImpl implements HoaDonService {
             } catch (NoResultException e) { }
 
             if (existingPhieu != null) {
+                // Fetch max index once for the current date/prefix
+                String cthdPrefix = "CTHD" + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("ddMMyyyy"));
+                String maxIdQuery = "SELECT MAX(c.id) FROM ChiTietHoaDon c WHERE c.id LIKE :prefix";
+                String maxIdStr = em.createQuery(maxIdQuery, String.class).setParameter("prefix", cthdPrefix + "%").getSingleResult();
+                int nextIndex = 1;
+                if (maxIdStr != null && maxIdStr.length() > 12) {
+                    try { nextIndex = Integer.parseInt(maxIdStr.substring(12)) + 1; } catch (Exception e) {}
+                }
+
                 for (ChiTietHoaDonDTO ctDto : cartDto) {
                     if (ctDto.getId() == null) {
                         TypedQuery<ChiTietHoaDon> checkQuery = em.createQuery(
@@ -102,7 +111,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                         } else {
                             ChiTietHoaDon ct = Mapper.map(ctDto, ChiTietHoaDon.class);
                             ct.setHoaDon(existingPhieu);
-                            ct.setId(util.IdGenerator.generateChiTietHoaDonId());
+                            ct.setId(String.format("%s%03d", cthdPrefix, nextIndex++));
                             if (ct.getDoUong() != null) {
                                 DoUong managedDoUong = em.find(DoUong.class, ct.getDoUong().getMaDoUong());
                                 ct.setDoUong(managedDoUong);
@@ -122,10 +131,18 @@ public class HoaDonServiceImpl implements HoaDonService {
 
                 em.persist(phieu);
 
+                String cthdPrefix = "CTHD" + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("ddMMyyyy"));
+                String maxIdQuery = "SELECT MAX(c.id) FROM ChiTietHoaDon c WHERE c.id LIKE :prefix";
+                String maxIdStr = em.createQuery(maxIdQuery, String.class).setParameter("prefix", cthdPrefix + "%").getSingleResult();
+                int nextIndex = 1;
+                if (maxIdStr != null && maxIdStr.length() > 12) {
+                    try { nextIndex = Integer.parseInt(maxIdStr.substring(12)) + 1; } catch (Exception e) {}
+                }
+
                 for (ChiTietHoaDonDTO ctDto : cartDto) {
                     ChiTietHoaDon ct = Mapper.map(ctDto, ChiTietHoaDon.class);
                     ct.setHoaDon(phieu);
-                    ct.setId(util.IdGenerator.generateChiTietHoaDonId());
+                    ct.setId(String.format("%s%03d", cthdPrefix, nextIndex++));
                     if (ct.getDoUong() != null) {
                         ct.setDoUong(em.merge(ct.getDoUong()));
                     }

@@ -28,27 +28,27 @@ public class StaffDashboard extends JFrame {
     private CardLayout cardLayout;
     private JPanel mainContentPanel;
     private JButton activeNavButton = null;
-    private JPanel gridTableContainer;   // kept for compat
+    private JPanel gridTableContainer; // kept for compat
     private JTabbedPane tableTabs;
 
     // ── Palette (Thống nhất với Manager) ──────────────────────────
-    private static final Color C_SIDEBAR_BG   = new Color(15,  17,  23);
-    private static final Color C_NAV_ACTIVE   = new Color(99, 179, 237);
-    private static final Color C_PAGE_BG      = new Color(246, 248, 252);
-    private static final Color C_CARD_BG      = Color.WHITE;
-    private static final Color C_TEXT_PRIMARY = new Color(26,  32,  44);
-    private static final Color C_TEXT_MUTED   = new Color(113, 128, 150);
-    private static final Color C_BORDER       = new Color(226, 232, 240);
-    private static final Color C_SUCCESS      = new Color(72, 187, 120);
-    private static final Color C_DANGER       = new Color(245, 101,  96);
-    private static final Color C_ACCENT       = new Color(99, 179, 237);
-    private static final Color C_WARNING      = new Color(237, 169, 38);
+    private static final Color C_SIDEBAR_BG = new Color(15, 17, 23);
+    private static final Color C_NAV_ACTIVE = new Color(99, 179, 237);
+    private static final Color C_PAGE_BG = new Color(246, 248, 252);
+    private static final Color C_CARD_BG = Color.WHITE;
+    private static final Color C_TEXT_PRIMARY = new Color(26, 32, 44);
+    private static final Color C_TEXT_MUTED = new Color(113, 128, 150);
+    private static final Color C_BORDER = new Color(226, 232, 240);
+    private static final Color C_SUCCESS = new Color(72, 187, 120);
+    private static final Color C_DANGER = new Color(245, 101, 96);
+    private static final Color C_ACCENT = new Color(99, 179, 237);
+    private static final Color C_WARNING = new Color(237, 169, 38);
 
     // ── Fonts ────────────────────────────────────────────────
-    private static final Font F_TITLE   = new Font("Segoe UI", Font.BOLD, 26);
-    private static final Font F_NAV     = new Font("Segoe UI Semibold", Font.PLAIN, 14);
-    private static final Font F_LABEL   = new Font("Segoe UI", Font.PLAIN, 12);
-    private static final Font F_BRAND   = new Font("Segoe UI", Font.BOLD, 16);
+    private static final Font F_TITLE = new Font("Segoe UI", Font.BOLD, 26);
+    private static final Font F_NAV = new Font("Segoe UI Semibold", Font.PLAIN, 14);
+    private static final Font F_LABEL = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font F_BRAND = new Font("Segoe UI", Font.BOLD, 16);
 
     public StaffDashboard(Client client, TaiKhoanDTO currentUser) {
         this.client = client;
@@ -65,7 +65,8 @@ public class StaffDashboard extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (confirm("Bạn có chắc muốn thoát ứng dụng?")) System.exit(0);
+                if (confirm("Bạn có chắc muốn thoát ứng dụng?"))
+                    System.exit(0);
             }
         });
 
@@ -109,16 +110,16 @@ public class StaffDashboard extends JFrame {
         nav.setBackground(C_SIDEBAR_BG);
         nav.setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        JButton btnDash     = buildNavButton("Thống Kê",   "DASHBOARD");
-        JButton btnMap      = buildNavButton("Sơ Đồ Bàn", "TABLE_MAP");
-        JButton btnSettings = buildNavButton("Cài Đặt",    "SETTINGS");
-        
+        JButton btnDash = buildNavButton("Dash Board", "DASHBOARD");
+        JButton btnMap = buildNavButton("Sơ Đồ Bàn", "TABLE_MAP");
+        JButton btnSettings = buildNavButton("Cài Đặt", "SETTINGS");
+
         nav.add(btnDash);
         nav.add(Box.createRigidArea(new Dimension(0, 2)));
         nav.add(btnMap);
         nav.add(Box.createRigidArea(new Dimension(0, 2)));
         nav.add(btnSettings);
-        
+
         setNavActive(btnDash, true);
         activeNavButton = btnDash;
 
@@ -154,7 +155,8 @@ public class StaffDashboard extends JFrame {
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.addActionListener(e -> {
-            if (activeNavButton != null) setNavActive(activeNavButton, false);
+            if (activeNavButton != null)
+                setNavActive(activeNavButton, false);
             setNavActive(btn, true);
             activeNavButton = btn;
             cardLayout.show(mainContentPanel, card);
@@ -179,46 +181,92 @@ public class StaffDashboard extends JFrame {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(C_PAGE_BG);
 
-        // Header
+        // Header (Top bar)
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(C_CARD_BG);
-        header.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, C_BORDER), new EmptyBorder(20, 32, 20, 32)));
+        header.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, C_BORDER), new EmptyBorder(16, 32, 16, 32)));
 
-        JLabel lbTitle = new JLabel("Thống Kê");
+        JLabel lbTitle = new JLabel("Dashboard");
         lbTitle.setFont(F_TITLE);
         lbTitle.setForeground(C_TEXT_PRIMARY);
         header.add(lbTitle, BorderLayout.WEST);
 
         page.add(header, BorderLayout.NORTH);
 
-        JPanel body = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
-        body.setBackground(C_PAGE_BG);
-        body.setBorder(new EmptyBorder(24, 32, 24, 32));
+        // Main content wrapper with ScrollPane
+        JPanel scrollContent = new JPanel();
+        scrollContent.setLayout(new BoxLayout(scrollContent, BoxLayout.Y_AXIS));
+        scrollContent.setBackground(C_PAGE_BG);
+        scrollContent.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        JPanel cardRev = createStatCard("Doanh thu hôm nay", "0 VNĐ", C_SUCCESS);
-        JPanel cardOrder = createStatCard("Hóa đơn hôm nay", "0", C_ACCENT);
+        // 1. Stat Cards Row
+        JPanel statsRow = new JPanel(new GridLayout(1, 3, 24, 0));
+        statsRow.setOpaque(false);
+        statsRow.setMaximumSize(new Dimension(1200, 140));
+
+        JPanel cardRev = createStatCard("Doanh thu", "0 VNĐ", C_SUCCESS);
+        JPanel cardOrder = createStatCard("Số lượng hóa đơn", "0", C_ACCENT);
         JPanel cardTable = createStatCard("Bàn đang phục vụ", "0", C_WARNING);
 
-        body.add(cardRev);
-        body.add(cardOrder);
-        body.add(cardTable);
-        
-        SimpleBarChart chart = new SimpleBarChart("Số lượng đơn hàng 7 ngày gần nhất");
-        chart.setPreferredSize(new Dimension(880, 400));
-        chart.setBorder(new CompoundBorder(
-            new LineBorder(C_BORDER, 1, true),
-            new EmptyBorder(10, 10, 10, 10)
-        ));
-        chart.setBarColor(C_WARNING);
-        body.add(chart);
-        
-        loadDashboardData(cardRev, cardOrder, cardTable, chart);
+        statsRow.add(cardRev);
+        statsRow.add(cardOrder);
+        statsRow.add(cardTable);
 
+        scrollContent.add(statsRow);
+        scrollContent.add(Box.createRigidArea(new Dimension(0, 32)));
+
+        // 2. Chart Section (Filter + Chart)
+        JPanel chartContainer = new JPanel(new BorderLayout(0, 16));
+        chartContainer.setBackground(Color.WHITE);
+        chartContainer.setBorder(new CompoundBorder(
+                new LineBorder(C_BORDER, 1, true),
+                new EmptyBorder(20, 24, 20, 24)));
+        chartContainer.setMaximumSize(new Dimension(1200, 500));
+
+        // Chart Header
+        JPanel chartHeader = new JPanel(new BorderLayout());
+        chartHeader.setOpaque(false);
+
+        JLabel lblChartTitle = new JLabel("Phân tích dữ liệu");
+        lblChartTitle.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 18));
+        lblChartTitle.setForeground(C_TEXT_PRIMARY);
+
+        JPanel filterGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        filterGroup.setOpaque(false);
+        JLabel lblF = new JLabel("Lọc theo:");
+        lblF.setFont(F_LABEL);
+        JComboBox<String> cbTime = styledCombo(new String[] { "Hôm nay", "7 Ngày qua", "Tháng này", "Năm này" });
+        filterGroup.add(lblF);
+        filterGroup.add(cbTime);
+
+        chartHeader.add(lblChartTitle, BorderLayout.WEST);
+        chartHeader.add(filterGroup, BorderLayout.EAST);
+
+        SimpleBarChart chart = new SimpleBarChart("Biểu đồ doanh thu");
+        chart.setPreferredSize(new Dimension(800, 350));
+        chart.setBarColor(C_ACCENT);
+
+        chartContainer.add(chartHeader, BorderLayout.NORTH);
+        chartContainer.add(chart, BorderLayout.CENTER);
+
+        scrollContent.add(chartContainer);
+
+        // Logic
+        loadDashboardData(cardRev, cardOrder, cardTable, chart, "Hôm nay");
+        cbTime.addActionListener(
+                e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
+
+        // Add refresh button for dashboard in header
         JButton btnRef = mkButton("Làm Mới", C_ACCENT);
-        btnRef.addActionListener(e -> loadDashboardData(cardRev, cardOrder, cardTable, chart));
+        btnRef.addActionListener(
+                e -> loadDashboardData(cardRev, cardOrder, cardTable, chart, (String) cbTime.getSelectedItem()));
         header.add(btnRef, BorderLayout.EAST);
 
-        page.add(body, BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(scrollContent);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        page.add(scroll, BorderLayout.CENTER);
         return page;
     }
 
@@ -227,9 +275,8 @@ public class StaffDashboard extends JFrame {
         card.setBackground(Color.WHITE);
         card.setPreferredSize(new Dimension(280, 120));
         card.setBorder(new CompoundBorder(
-            new MatteBorder(4, 0, 0, 0, accent),
-            new EmptyBorder(20, 20, 20, 20)
-        ));
+                new MatteBorder(4, 0, 0, 0, accent),
+                new EmptyBorder(20, 20, 20, 20)));
 
         JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 13));
@@ -241,65 +288,103 @@ public class StaffDashboard extends JFrame {
 
         card.add(lblTitle, BorderLayout.NORTH);
         card.add(lblValue, BorderLayout.CENTER);
-        
+
         card.putClientProperty("valueLabel", lblValue);
         return card;
     }
 
-    private void loadDashboardData(JPanel cardRev, JPanel cardOrder, JPanel cardTable, SimpleBarChart chart) {
+    private void loadDashboardData(JPanel cardRev, JPanel cardOrder, JPanel cardTable, SimpleBarChart chart,
+            String filter) {
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
                 try {
+                    // 1. Table Stat
                     Response resTables = client.sendRequest(new Request(CommandType.GET_TABLES, null));
                     if (resTables.isSuccess() && resTables.getData() != null) {
-                        @SuppressWarnings("unchecked")
                         List<BanDTO> listBan = (List<BanDTO>) resTables.getData();
                         long activeTables = listBan.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
-                        SwingUtilities.invokeLater(() -> ((JLabel)cardTable.getClientProperty("valueLabel")).setText(String.valueOf(activeTables)));
+                        SwingUtilities.invokeLater(() -> ((JLabel) cardTable.getClientProperty("valueLabel"))
+                                .setText(String.valueOf(activeTables)));
                     }
 
+                    // 2. Revenue & Orders
                     Response resInvoices = client.sendRequest(new Request(CommandType.GET_INVOICES, null));
                     if (resInvoices.isSuccess() && resInvoices.getData() != null) {
-                        @SuppressWarnings("unchecked")
                         List<HoaDonDTO> listHD = (List<HoaDonDTO>) resInvoices.getData();
-                        LocalDate today = LocalDate.now();
-                        long count = 0;
-                        double rev = 0;
-                        
-                        // Prepare chart data (last 7 days order count)
+                        LocalDate now = LocalDate.now();
+                        double totalRev = 0;
+                        int totalOrders = 0;
                         Map<String, Double> chartData = new LinkedHashMap<>();
-                        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
-                        for (int i = 6; i >= 0; i--) {
-                            chartData.put(today.minusDays(i).format(fmt), 0.0);
-                        }
-                        
-                        for (HoaDonDTO hd : listHD) {
-                            if (hd.getNgayTao() != null) {
-                                // Chỉ tính các hóa đơn Đã thanh toán vào doanh thu
-                                boolean isPaid = "Đã thanh toán".equals(hd.getTrangThai());
 
-                                if (hd.getNgayTao().equals(today) && isPaid) {
-                                    count++;
-                                    rev += hd.getTongTien();
-                                }
-                                
-                                String dateStr = hd.getNgayTao().format(fmt);
-                                if (chartData.containsKey(dateStr) && isPaid) {
-                                    chartData.put(dateStr, chartData.get(dateStr) + 1.0); // count orders
+                        if ("Hôm nay".equals(filter)) {
+                            totalOrders = (int) listHD.stream()
+                                    .filter(h -> now.equals(h.getNgayTao()) && "Đã thanh toán".equals(h.getTrangThai()))
+                                    .count();
+                            totalRev = listHD.stream()
+                                    .filter(h -> now.equals(h.getNgayTao()) && "Đã thanh toán".equals(h.getTrangThai()))
+                                    .mapToDouble(HoaDonDTO::getTongTien).sum();
+                            chart.setTitle("Doanh thu hôm nay (VNĐ)");
+                            chartData.put(now.format(DateTimeFormatter.ofPattern("dd/MM")), totalRev);
+                        } else if ("7 Ngày qua".equals(filter)) {
+                            LocalDate sevenDaysAgo = now.minusDays(6);
+                            for (int i = 0; i < 7; i++)
+                                chartData.put(sevenDaysAgo.plusDays(i).format(DateTimeFormatter.ofPattern("dd/MM")),
+                                        0.0);
+                            for (HoaDonDTO h : listHD) {
+                                if (h.getNgayTao() != null && !h.getNgayTao().isBefore(sevenDaysAgo)
+                                        && "Đã thanh toán".equals(h.getTrangThai())) {
+                                    totalOrders++;
+                                    totalRev += h.getTongTien();
+                                    String key = h.getNgayTao().format(DateTimeFormatter.ofPattern("dd/MM"));
+                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
                                 }
                             }
+                            chart.setTitle("Biểu đồ doanh thu 7 ngày qua (VNĐ)");
+                        } else if ("Tháng này".equals(filter)) {
+                            int month = now.getMonthValue();
+                            int year = now.getYear();
+                            for (int i = 1; i <= now.getDayOfMonth(); i++)
+                                chartData.put(i + "/" + month, 0.0);
+                            for (HoaDonDTO h : listHD) {
+                                if (h.getNgayTao() != null && h.getNgayTao().getMonthValue() == month
+                                        && h.getNgayTao().getYear() == year
+                                        && "Đã thanh toán".equals(h.getTrangThai())) {
+                                    totalOrders++;
+                                    totalRev += h.getTongTien();
+                                    String key = h.getNgayTao().getDayOfMonth() + "/" + month;
+                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
+                                }
+                            }
+                            chart.setTitle("Biểu đồ doanh thu tháng " + month + " (VNĐ)");
+                        } else if ("Năm này".equals(filter)) {
+                            int year = now.getYear();
+                            for (int i = 1; i <= 12; i++)
+                                chartData.put("T" + i, 0.0);
+                            for (HoaDonDTO h : listHD) {
+                                if (h.getNgayTao() != null && h.getNgayTao().getYear() == year
+                                        && "Đã thanh toán".equals(h.getTrangThai())) {
+                                    totalOrders++;
+                                    totalRev += h.getTongTien();
+                                    String key = "T" + h.getNgayTao().getMonthValue();
+                                    chartData.put(key, chartData.getOrDefault(key, 0.0) + h.getTongTien());
+                                }
+                            }
+                            chart.setTitle("Biểu đồ doanh thu năm " + year + " (VNĐ)");
                         }
-                        
-                        final long fCount = count;
-                        final double fRev = rev;
+
+                        final double fRev = totalRev;
+                        final int fOrders = totalOrders;
                         SwingUtilities.invokeLater(() -> {
-                            ((JLabel)cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fCount));
-                            ((JLabel)cardRev.getClientProperty("valueLabel")).setText(String.format("%,.0f VNĐ", fRev));
+                            ((JLabel) cardOrder.getClientProperty("valueLabel")).setText(String.valueOf(fOrders));
+                            ((JLabel) cardRev.getClientProperty("valueLabel"))
+                                    .setText(String.format("%,.0f VNĐ", fRev));
                             chart.updateData(chartData);
                         });
                     }
-                } catch (Exception ex) { ex.printStackTrace(); }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
                 return null;
             }
         }.execute();
@@ -352,9 +437,8 @@ public class StaffDashboard extends JFrame {
         lbl.setBackground(bgColor);
         lbl.setOpaque(true);
         lbl.setBorder(new CompoundBorder(
-            new LineBorder(textColor, 1, true),
-            new EmptyBorder(4, 10, 4, 10)
-        ));
+                new LineBorder(textColor, 1, true),
+                new EmptyBorder(4, 10, 4, 10)));
         return lbl;
     }
 
@@ -369,24 +453,26 @@ public class StaffDashboard extends JFrame {
                         List<BanDTO> listBan = (List<BanDTO>) res.getData();
                         SwingUtilities.invokeLater(() -> updateTabbedPane(listBan));
                     }
-                } catch (Exception ex) { ex.printStackTrace(); }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
                 return null;
             }
         }.execute();
     }
 
     private void updateTabbedPane(List<BanDTO> listBan) {
-        if (tableTabs == null) return;
+        if (tableTabs == null)
+            return;
         int prevSelected = tableTabs.getSelectedIndex();
         tableTabs.removeAll();
 
         // Nhóm theo vi_tri, giữ thứ tự xuất hiện
         Map<String, List<BanDTO>> grouped = listBan.stream()
-            .collect(Collectors.groupingBy(
-                b -> (b.getViTri() != null && !b.getViTri().isBlank()) ? b.getViTri() : "Khác",
-                LinkedHashMap::new,
-                Collectors.toList()
-            ));
+                .collect(Collectors.groupingBy(
+                        b -> (b.getViTri() != null && !b.getViTri().isBlank()) ? b.getViTri() : "Khác",
+                        LinkedHashMap::new,
+                        Collectors.toList()));
 
         for (Map.Entry<String, List<BanDTO>> entry : grouped.entrySet()) {
             String zone = entry.getKey();
@@ -403,12 +489,12 @@ public class StaffDashboard extends JFrame {
             JScrollPane sp = new JScrollPane(tabPanel);
             sp.setBorder(null);
             sp.getVerticalScrollBar().setUnitIncrement(16);
-            
+
             // Count badge in tab title
             long occupied = zoneBans.stream().filter(b -> "Có khách".equals(b.getTrangThai())).count();
-            String tabTitle = zone + "  (" + occupied + "/" + zoneBans.size() + " bàn)"; 
+            String tabTitle = zone + "  (" + occupied + "/" + zoneBans.size() + " bàn)";
             tableTabs.addTab(tabTitle, sp);
-            
+
             // colourize tab header: red if any occupied
             int idx = tableTabs.indexOfTab(tabTitle);
             if (occupied > 0) {
@@ -430,16 +516,15 @@ public class StaffDashboard extends JFrame {
 
         JPanel card = new JPanel(new BorderLayout(0, 8));
         card.setPreferredSize(new Dimension(140, 120));
-        
+
         // Highlight background for occupied tables
         Color bgColor = isOccupied ? new Color(254, 235, 236) : C_CARD_BG;
         Color hoverBgColor = isOccupied ? new Color(252, 220, 222) : new Color(247, 250, 252);
-        
+
         card.setBackground(bgColor);
         card.setBorder(new CompoundBorder(
                 new LineBorder(isOccupied ? C_DANGER : C_BORDER, isOccupied ? 2 : 1, true),
-                new EmptyBorder(16, 12, 16, 12)
-        ));
+                new EmptyBorder(16, 12, 16, 12)));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         JLabel lblIcon = new JLabel(isOccupied ? "☕" : "🪑", SwingConstants.CENTER);
@@ -463,10 +548,12 @@ public class StaffDashboard extends JFrame {
             public void mouseEntered(MouseEvent e) {
                 card.setBackground(hoverBgColor);
             }
+
             @Override
             public void mouseExited(MouseEvent e) {
                 card.setBackground(bgColor);
             }
+
             @Override
             public void mouseClicked(MouseEvent e) {
                 openOrder(ban);
@@ -500,13 +587,27 @@ public class StaffDashboard extends JFrame {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(new EmptyBorder(8, 18, 8, 18));
         btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btn.setBackground(bg.darker()); }
-            public void mouseExited (MouseEvent e) { btn.setBackground(bg); }
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(bg.darker());
+            }
+
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(bg);
+            }
         });
         return btn;
     }
 
+    private JComboBox<String> styledCombo(String[] items) {
+        JComboBox<String> cb = new JComboBox<>(items);
+        cb.setFont(F_NAV);
+        cb.setBackground(Color.WHITE);
+        cb.setPreferredSize(new Dimension(150, 32));
+        return cb;
+    }
+
     private boolean confirm(String msg) {
-        return JOptionPane.showConfirmDialog(this, msg, "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+        return JOptionPane.showConfirmDialog(this, msg, "Xác nhận",
+                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
     }
 }
